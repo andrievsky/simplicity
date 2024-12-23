@@ -2,7 +2,7 @@ package storage
 
 import (
 	"context"
-	"errors"
+	"simplicity/oops"
 	"strings"
 )
 
@@ -11,11 +11,6 @@ type ListResult struct {
 	Path     string
 	Size     int
 }
-
-var InvalidKey = errors.New("invalid key")
-var KeyNotFound = errors.New("key not found")
-var KeyAlreadyExists = errors.New("key already exists")
-var ValidationError = errors.New("validation error")
 
 type BlobStore interface {
 	List(ctx context.Context, prefix string, delimiter string) ([]ListResult, error)
@@ -56,7 +51,7 @@ func (s *InMemoryBlobStore) List(ctx context.Context, prefix string, delimiter s
 func (s *InMemoryBlobStore) Get(ctx context.Context, key string) ([]byte, error) {
 	data, ok := s.store[key]
 	if !ok {
-		return nil, KeyNotFound
+		return nil, oops.KeyNotFound
 	}
 	return data, nil
 }

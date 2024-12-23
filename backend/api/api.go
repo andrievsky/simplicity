@@ -5,14 +5,15 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"simplicity/storage"
+	"simplicity/items"
+	"simplicity/oops"
 )
 
 type ItemHandler struct {
-	registry storage.ItemRegistry
+	registry items.Registry
 }
 
-func NewItemHandler(registry storage.ItemRegistry) *http.ServeMux {
+func NewItemHandler(registry items.Registry) *http.ServeMux {
 	router := http.NewServeMux()
 	handler := &ItemHandler{registry: registry}
 
@@ -37,7 +38,7 @@ func (h *ItemHandler) list(w http.ResponseWriter, r *http.Request) {
 
 func (h *ItemHandler) post(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	var item storage.ItemData
+	var item items.ItemData
 	err := json.NewDecoder(r.Body).Decode(&item)
 	if err != nil {
 		writeError(w, r, err)
@@ -63,7 +64,7 @@ func (h *ItemHandler) get(w http.ResponseWriter, r *http.Request) {
 
 func (h *ItemHandler) put(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	var item storage.ItemData
+	var item items.ItemData
 	err := json.NewDecoder(r.Body).Decode(&item)
 	if err != nil {
 		writeError(w, r, err)
@@ -115,10 +116,10 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 }
 
 func resolveErrorCode(err error) int {
-	if errors.Is(err, storage.InvalidKey) || errors.Is(err, storage.ValidationError) || errors.Is(err, storage.KeyAlreadyExists) {
+	if errors.Is(err, oops.InvalidKey) || errors.Is(err, oops.ValidationError) || errors.Is(err, oops.KeyAlreadyExists) {
 		return http.StatusBadRequest
 	}
-	if errors.Is(err, storage.KeyNotFound) {
+	if errors.Is(err, oops.KeyNotFound) {
 		return http.StatusNotFound
 	}
 	return http.StatusInternalServerError

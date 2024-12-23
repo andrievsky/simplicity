@@ -1,7 +1,8 @@
-package storage
+package items
 
 import (
 	"context"
+	"simplicity/oops"
 	"testing"
 	"time"
 
@@ -26,7 +27,7 @@ func TestInMemoryRegistry_Create_Duplicate(t *testing.T) {
 	assert.Nil(t, err)
 
 	err = r.Create(ctx, id, value)
-	assert.Equal(t, KeyAlreadyExists, err)
+	assert.Equal(t, oops.KeyAlreadyExists, err)
 }
 
 func TestInMemoryRegistry_Create_EmptyID(t *testing.T) {
@@ -35,7 +36,7 @@ func TestInMemoryRegistry_Create_EmptyID(t *testing.T) {
 	id := ""
 	value := newImageData()
 	err := r.Create(ctx, id, value)
-	assert.Equal(t, InvalidKey, err)
+	assert.Equal(t, oops.InvalidKey, err)
 }
 
 func TestInMemoryRegistry_Read(t *testing.T) {
@@ -57,7 +58,7 @@ func TestInMemoryRegistry_Read_EmptyID(t *testing.T) {
 	ctx := context.Background()
 	id := ""
 	_, err := r.Read(ctx, id)
-	assert.Equal(t, InvalidKey, err)
+	assert.Equal(t, oops.InvalidKey, err)
 }
 
 func TestInMemoryRegistry_Read_NotFound(t *testing.T) {
@@ -65,7 +66,7 @@ func TestInMemoryRegistry_Read_NotFound(t *testing.T) {
 	ctx := context.Background()
 	id := "id"
 	_, err := r.Read(ctx, id)
-	assert.Equal(t, KeyNotFound, err)
+	assert.Equal(t, oops.KeyNotFound, err)
 }
 
 func TestInMemoryRegistry_List(t *testing.T) {
@@ -118,7 +119,7 @@ func TestInMemoryRegistry_Update_EmptyID(t *testing.T) {
 	id := ""
 	value := newImageData()
 	err := r.Update(ctx, id, value)
-	assert.Equal(t, InvalidKey, err)
+	assert.Equal(t, oops.InvalidKey, err)
 }
 
 func TestInMemoryRegistry_Delete(t *testing.T) {
@@ -133,7 +134,7 @@ func TestInMemoryRegistry_Delete(t *testing.T) {
 	assert.Nil(t, err)
 
 	_, err = r.Read(ctx, id)
-	assert.Equal(t, KeyNotFound, err)
+	assert.Equal(t, oops.KeyNotFound, err)
 }
 
 func TestInMemoryRegistry_Delete_EmptyID(t *testing.T) {
@@ -141,7 +142,7 @@ func TestInMemoryRegistry_Delete_EmptyID(t *testing.T) {
 	ctx := context.Background()
 	id := ""
 	err := r.Delete(ctx, id)
-	assert.Equal(t, InvalidKey, err)
+	assert.Equal(t, oops.InvalidKey, err)
 }
 
 func TestInMemoryRegistry_Delete_NotFound(t *testing.T) {
@@ -149,11 +150,11 @@ func TestInMemoryRegistry_Delete_NotFound(t *testing.T) {
 	ctx := context.Background()
 	id := "id"
 	err := r.Delete(ctx, id)
-	assert.Equal(t, KeyNotFound, err)
+	assert.Equal(t, oops.KeyNotFound, err)
 }
 
-func newTestRegistry() *InMemoryItemRegistry {
-	return NewInMemoryItemRegistry(time.Now)
+func newTestRegistry() *InMemoryRegistry {
+	return NewInMemoryRegistry(time.Now)
 }
 
 func newImageData() ItemData {

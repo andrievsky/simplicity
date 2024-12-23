@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"simplicity/api"
 	"simplicity/config"
-	"simplicity/storage"
+	"simplicity/items"
 	"time"
 )
 
@@ -17,7 +17,7 @@ func main() {
 }
 
 func setupServer(now func() time.Time) *http.ServeMux {
-	registry := storage.NewInMemoryItemRegistry(now)
+	registry := items.NewInMemoryRegistry(now)
 	api := api.NewItemHandler(registry)
 	mux := http.NewServeMux()
 	mux.Handle("/api/", http.StripPrefix("/api", api))

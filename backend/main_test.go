@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
-	"simplicity/storage"
+	"simplicity/items"
 	"strings"
 	"testing"
 	"time"
@@ -324,13 +324,13 @@ func Test_endpoints(t *testing.T) {
 }
 
 func makeItem(id, title, description string, tags ...string) string {
-	item := storage.Item{
-		ItemMetadata: storage.ItemMetadata{
+	item := items.Item{
+		ItemMetadata: items.ItemMetadata{
 			ID:        id,
 			CreatedAt: testTimestamp,
 			UpdatedAt: testTimestamp,
 		},
-		ItemData: storage.ItemData{
+		ItemData: items.ItemData{
 			Title:       title,
 			Description: description,
 			Tags:        tags,

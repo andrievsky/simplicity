@@ -1,13 +1,14 @@
-package storage
+package items
 
 import (
 	"context"
 	"errors"
+	"simplicity/oops"
 	"sort"
 	"time"
 )
 
-type ItemRegistry interface {
+type Registry interface {
 	Create(ctx context.Context, id string, value ItemData) error
 	Read(ctx context.Context, id string) (Item, error)
 	List(ctx context.Context) ([]Item, error)
@@ -15,25 +16,25 @@ type ItemRegistry interface {
 	Delete(ctx context.Context, id string) error
 }
 
-type InMemoryItemRegistry struct {
+type InMemoryRegistry struct {
 	store map[string]Item
 	now   func() time.Time
 }
 
-func NewInMemoryItemRegistry(now func() time.Time) *InMemoryItemRegistry {
-	return &InMemoryItemRegistry{make(map[string]Item), now}
+func NewInMemoryRegistry(now func() time.Time) *InMemoryRegistry {
+	return &InMemoryRegistry{make(map[string]Item), now}
 }
 
-func (r *InMemoryItemRegistry) Create(ctx context.Context, id string, value ItemData) error {
+func (r *InMemoryRegistry) Create(ctx context.Context, id string, value ItemData) error {
 	if id == "" {
-		return InvalidKey
+		return oops.InvalidKey
 	}
 	err := validateItemData(value)
 	if err != nil {
-		return errors.Join(ValidationError, err)
+		return errors.Join(oops.ValidationError, err)
 	}
 	if _, ok := r.store[id]; ok {
-		return KeyAlreadyExists
+		return oops.KeyAlreadyExists
 	}
 	r.store[id] = Item{
 		ItemMetadata: ItemMetadata{
@@ -46,18 +47,18 @@ func (r *InMemoryItemRegistry) Create(ctx context.Context, id string, value Item
 	return nil
 }
 
-func (r *InMemoryItemRegistry) Read(ctx context.Context, id string) (Item, error) {
+func (r *InMemoryRegistry) Read(ctx context.Context, id string) (Item, error) {
 	if id == "" {
-		return Item{}, InvalidKey
+		return Item{}, oops.InvalidKey
 	}
 	item, ok := r.store[id]
 	if !ok {
-		return Item{}, KeyNotFound
+		return Item{}, oops.KeyNotFound
 	}
 	return item, nil
 }
 
-func (r *InMemoryItemRegistry) List(ctx context.Context) ([]Item, error) {
+func (r *InMemoryRegistry) List(ctx context.Context) ([]Item, error) {
 	items := make([]Item, len(r.store))
 	i := 0
 	for _, item := range r.store {
@@ -70,9 +71,9 @@ func (r *InMemoryItemRegistry) List(ctx context.Context) ([]Item, error) {
 	return items, nil
 }
 
-func (r *InMemoryItemRegistry) Update(ctx context.Context, id string, value ItemData) error {
+func (r *InMemoryRegistry) Update(ctx context.Context, id string, value ItemData) error {
 	if id == "" {
-		return InvalidKey
+		return oops.InvalidKey
 	}
 	err := validateItemData(value)
 	if err != nil {
@@ -80,7 +81,7 @@ func (r *InMemoryItemRegistry) Update(ctx context.Context, id string, value Item
 	}
 	item, ok := r.store[id]
 	if !ok {
-		return KeyNotFound
+		return oops.KeyNotFound
 	}
 	item.ItemData = value
 	item.UpdatedAt = r.now()
@@ -88,12 +89,12 @@ func (r *InMemoryItemRegistry) Update(ctx context.Context, id string, value Item
 	return nil
 }
 
-func (r *InMemoryItemRegistry) Delete(ctx context.Context, id string) error {
+func (r *InMemoryRegistry) Delete(ctx context.Context, id string) error {
 	if id == "" {
-		return InvalidKey
+		return oops.InvalidKey
 	}
 	if _, ok := r.store[id]; !ok {
-		return KeyNotFound
+		return oops.KeyNotFound
 	}
 	delete(r.store, id)
 	return nil
