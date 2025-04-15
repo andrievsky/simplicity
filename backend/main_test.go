@@ -21,9 +21,10 @@ var testTimestamp, _ = time.Parse(time.RFC3339, "2024-12-22T18:37:56.871781+01:0
 
 func runTestServer() *httptest.Server {
 	log.SetOutput(io.Discard)
-	return httptest.NewServer(setupServer(func() time.Time {
+	registry := items.NewInMemoryRegistry(func() time.Time {
 		return testTimestamp
-	}))
+	})
+	return httptest.NewServer(setupServer(registry))
 }
 
 type Request struct {

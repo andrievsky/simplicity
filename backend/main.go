@@ -14,14 +14,16 @@ import (
 
 func main() {
 	fmt.Println(config.BackendInfo())
-	mux := setupServer(time.Now)
+	registry := items.NewInMemoryRegistry(time.Now)
+	populateWithMockData(registry)
+	mux := setupServer(registry)
 
 	slog.Info("Starting server on port", "Port", config.BackendPort)
 	http.ListenAndServe(fmt.Sprintf(":%s", config.BackendPort), mux)
 }
 
-func setupServer(now func() time.Time) *http.ServeMux {
-	registry := items.NewInMemoryRegistry(now)
+func setupServer(registry items.Registry) *http.ServeMux {
+
 	itemsApi := api.NewItemHandler(registry)
 	mux := http.NewServeMux()
 	mux.Handle("/api/", http.StripPrefix("/api", itemsApi))
@@ -30,8 +32,6 @@ func setupServer(now func() time.Time) *http.ServeMux {
 	mux.HandleFunc("/health", func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-
-	//populateWithMockData(registry)
 
 	return mux
 }
