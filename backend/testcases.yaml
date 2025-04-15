@@ -1,0 +1,244 @@
+test_cases:
+  - name: "it should return 200 when health is ok"
+    calls:
+      - request:
+          path: "/health"
+          method: "GET"
+        response:
+          code: 200
+
+  - name: "it should return 404 when endpoint is not found"
+    calls:
+      - request:
+          path: "/something"
+          method: "GET"
+        response:
+          code: 404
+
+  - name: "it should return 405 when post with id in path"
+    calls:
+      - request:
+          path: "/api/item/1"
+          method: "POST"
+          body: '{"name": "item1"}'
+        response:
+          code: 405
+
+  - name: "it should return 405 when item post path is invalid"
+    calls:
+      - request:
+          path: "/api/item/1"
+          method: "POST"
+          body: '{"title": "item1"}'
+        response:
+          code: 405
+
+  - name: "it should successfully create an item"
+    calls:
+      - request:
+          path: "/api/item"
+          method: "POST"
+          body: '{"id": "1", "title": "item1"}'
+        response:
+          code: 201
+
+  - name: "it should return 400 when invalid id"
+    calls:
+      - request:
+          path: "/api/item"
+          method: "POST"
+          body: '{"title": "item1"}'
+        response:
+          code: 400
+      - request:
+          path: "/api/item"
+          method: "POST"
+          body: '{"id": "", "title": "item1"}'
+        response:
+          code: 400
+
+  - name: "it should fail when create an item duplicate"
+    calls:
+      - request:
+          path: "/api/item"
+          method: "POST"
+          body: '{"id": "1", "title": "item1"}'
+        response:
+          code: 201
+      - request:
+          path: "/api/item"
+          method: "POST"
+          body: '{"id": "1", "title": "item2"}'
+        response:
+          code: 400
+      - request:
+          path: "/api/item/1"
+          method: "GET"
+        response:
+          code: 200
+          body: >
+            {
+              "id": "1",
+              "createdAt": "2024-12-22T18:37:56.871781+01:00",
+              "updatedAt": "2024-12-22T18:37:56.871781+01:00",
+              "title": "item1",
+              "description": "",
+              "tags": [],
+              "images": []
+            }
+
+  - name: "it should successfully read an item"
+    calls:
+      - request:
+          path: "/api/item"
+          method: "POST"
+          body: '{"id": "1", "title": "item1", "description": "description1", "tags": ["tag1", "tag2"]}'
+        response:
+          code: 201
+      - request:
+          path: "/api/item/1"
+          method: "GET"
+        response:
+          code: 200
+          body: >
+            {
+              "id": "1",
+              "createdAt": "2024-12-22T18:37:56.871781+01:00",
+              "updatedAt": "2024-12-22T18:37:56.871781+01:00",
+              "title": "item1",
+              "description": "description1",
+              "tags": ["tag1", "tag2"],
+              "images": []
+            }
+
+  - name: "it should return 404 read item when item does not exist"
+    calls:
+      - request:
+          path: "/api/item/1"
+          method: "GET"
+        response:
+          code: 404
+
+  - name: "it should successfully list items"
+    calls:
+      - request:
+          path: "/api/item"
+          method: "POST"
+          body: '{"id": "1", "title": "item1"}'
+        response:
+          code: 201
+      - request:
+          path: "/api/item"
+          method: "POST"
+          body: '{"id": "2", "title": "item2"}'
+        response:
+          code: 201
+      - request:
+          path: "/api/item"
+          method: "GET"
+        response:
+          code: 200
+          body: >
+            [
+              {
+                "id": "1",
+                "createdAt": "2024-12-22T18:37:56.871781+01:00",
+                "updatedAt": "2024-12-22T18:37:56.871781+01:00",
+                "title": "item1",
+                "description": "",
+                "tags": [],
+                "images": []
+              },
+              {
+                "id": "2",
+                "createdAt": "2024-12-22T18:37:56.871781+01:00",
+                "updatedAt": "2024-12-22T18:37:56.871781+01:00",
+                "title": "item2",
+                "description": "",
+                "tags": [],
+                "images": []
+              }
+            ]
+      - request:
+          path: "/api/item/"
+          method: "GET"
+        response:
+          code: 200
+          body: >
+            [
+              {
+                "id": "1",
+                "createdAt": "2024-12-22T18:37:56.871781+01:00",
+                "updatedAt": "2024-12-22T18:37:56.871781+01:00",
+                "title": "item1",
+                "description": "",
+                "tags": [],
+                "images": []
+              },
+              {
+                "id": "2",
+                "createdAt": "2024-12-22T18:37:56.871781+01:00",
+                "updatedAt": "2024-12-22T18:37:56.871781+01:00",
+                "title": "item2",
+                "description": "",
+                "tags": [],
+                "images": []
+              }
+            ]
+
+  - name: "it should successfully delete existing item"
+    calls:
+      - request:
+          path: "/api/item"
+          method: "POST"
+          body: '{"id": "1", "title": "item1"}'
+        response:
+          code: 201
+      - request:
+          path: "/api/item/1"
+          method: "DELETE"
+        response:
+          code: 200
+      - request:
+          path: "/api/item/"
+          method: "GET"
+        response:
+          code: 200
+          body: "[]"
+
+  - name: "it should return 404 delete non-existing item"
+    calls:
+      - request:
+          path: "/api/item/1"
+          method: "DELETE"
+        response:
+          code: 404
+  - name: "it should successfully patch an item"
+    calls:
+      - request:
+          path: "/api/item"
+          method: "POST"
+          body: '{"id": "1", "title": "item1"}'
+        response:
+          code: 201
+      - request:
+          path: "/api/item/1"
+          method: "PATCH"
+          body: '{"title": "newTitle", "description": "newDescription", "tags": ["tag1", "tag2"]}'
+        response:
+          code: 200
+      - request:
+          path: "/api/item/1"
+          method: "GET"
+        response:
+            code: 200
+            body: >
+                {
+                  "id": "1",
+                  "createdAt": "2024-12-22T18:37:56.871781+01:00",
+                  "updatedAt": "2024-12-22T18:37:56.871781+01:00",
+                  "title": "newTitle",
+                  "description": "newDescription",
+                  "tags": ["tag1", "tag2"],
+                  "images": []
+                }

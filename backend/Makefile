@@ -1,8 +1,12 @@
 .DEFAULT_GOAL := build
 .PHONY: clean
 
-build:
+
+clean:
 	rm -rf ./build
+	go clean
+
+build: clean
 	go build -o ./build/app
 
 run: build
