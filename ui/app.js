@@ -1,71 +1,35 @@
-import {FetchResource, Result, FromTemplate} from './utils.js';
+import {BackendService} from './backend.js';
+import {Model} from "./model.js";
+import {HeaderComponent} from "./components/header.js";
+import {ItemListComponent} from "./components/item-list.js";
+import {FooterComponent} from "./components/footer.js";
+import {ModalComponent} from "./components/modal.js";
 
 const init = async () => {
-    const header = null || document.getElementById('header_root');
-    const content = null || document.getElementById('page_root');
-    const footer = null || document.getElementById('footer_root');
+    const header = document.getElementById('headerContainer');
+    const content = document.getElementById('contentContainer');
+    const footer = document.getElementById('footerContainer');
+    const modal = document.getElementById("modalContainer");
+    const itemTemplate = document.getElementById('item-template');
+    const itemEditTemplate = document.getElementById('item-edit-template');
 
-    // Render the header and footer of the page.
-    //header.innerHTML = await Navbar.render();
-    //await Navbar.after_render();
-    //footer.innerHTML = await Footer.render();
-    //await Footer.after_render();
-
-    let itemService = new ItemListService();
-    let itemModel = new ItemListModel(itemService);
-    let itemView = new ItemListView(content);
-    let itemController = new ItemListController(itemView, itemModel);
-    await itemController.init()
+    let backend = new BackendService("");
+    let model = new Model();
+    let modalComponent = new ModalComponent(modal, model, itemEditTemplate);
+    modalComponent.init();
+    let headerComponent = new HeaderComponent(header, model);
+    headerComponent.init();
+    let itemListComponent = new ItemListComponent(content, model, itemTemplate);
+    itemListComponent.init();
+    let footerComponent = new FooterComponent(footer);
+    footerComponent.init();
+    await backend.listItems().then((result) => {
+        if (result.ok()) {
+            model.items.set(result.data);
+        } else {
+            console.error("Error loading items:", result.error);
+        }
+    });
 };
 
-
-// Listen on page load.
 window.addEventListener('load', init);
-
-function ItemListService() {
-    this.listItems = async function () {
-        return FetchResource('/api/item', 'GET')
-    };
-}
-
-function ItemListModel(service) {
-    this.getAllItems = async function () {
-        return service.listItems();
-    }
-}
-
-function ItemListController(view, model) {
-    this.init = async () => {
-        let result = await model.getAllItems();
-        if (result.isEmpty()) {
-            view.showEmpty();
-            return;
-        }
-        if (!result.isSuccess()) {
-            view.showError(result.error);
-            return;
-        }
-        view.addItems(result.data);
-    }
-}
-
-function ItemListView(container) {
-    this.addItems = function (items) {
-        if (!items || items.length === 0) {
-            this.showEmpty();
-            return;
-        }
-        container.innerHTML = "";
-        items.forEach((item) => {
-            container.appendChild(FromTemplate('item-template', item));
-        });
-    };
-
-    this.showEmpty = function () {
-        container.innerHTML = "<p>No items found</p>";
-    }
-
-    this.showError = function (err) {
-        container.innerHTML = `<p class="error">Error: ${err.message}</p>`;
-    };
-}

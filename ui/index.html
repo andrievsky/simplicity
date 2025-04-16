@@ -5,29 +5,73 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>Simplicity</title>
-    <link
-            rel="stylesheet"
-            href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
-            integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
-            crossorigin="anonymous"
-    />
-    <link rel="stylesheet" href="./styles.css" />
     <script type="module" src="./app.js"></script>
+    <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-<!-- Header root (always visible) -->
-<header id="header_root"></header>
-<!-- Page root (content rendered based on URL) -->
-<main id="page_root"></main>
-<!-- Footer root (always visible) -->
-<footer id="footer_root"></footer>
+<header id="headerContainer">
+    <input type="search" placeholder="Search..." />
+</header>
+
+<main id="contentContainer">
+</main>
+
+<footer id="footerContainer">
+    © 2025 Simplicity UI - All rights reserved.
+</footer>
 
 <template id="item-template">
-    <div class="template-content">
-        <h2 data-key="title">Title</h2>
-        <p data-key="description">Description goes here.</p>
-        <button class="btn btn-primary" data-key="button">Edit</button>
+    <div class="card">
+        <img class="cover" data-key="images" src="" alt="Cover Image" />
+        <div class="content">
+            <div>
+                <h2 data-key="title">Title</h2>
+                <p data-key="description">Optional description.</p>
+                <div class="tags" data-key="tags">
+                    <!-- Tags injected here -->
+                </div>
+            </div>
+            <button class="edit-button">Edit</button>
+        </div>
     </div>
 </template>
+
+<template id="item-edit-template">
+    <div class="modal">
+        <h3>Edit</h3>
+        <input type="text" class="title" data-key="title" />
+        <textarea class="description" data-key="description"></textarea>
+        <input type="text" data-key="images" placeholder="Image URL" />
+        <input type="text" data-key="tags" placeholder="Comma-separated tags" />
+        <div class="modal-actions">
+            <button class="cancel-button">Cancel</button>
+            <button class="save-button">Save</button>
+        </div>
+    </div>
+</template>
+
+<!-- Modal Template -->
+<div class="modal-overlay" id="modalContainer">
+
+</div>
+
+<script>
+    /*
+    document.addEventListener("click", (e) => {
+        if (e.target.matches("[data-key='button']")) {
+            modal.style.display = "flex";
+        }
+
+        if (e.target === modal || e.target === cancelBtn) {
+            modal.style.display = "none";
+        }
+    });
+
+    document.getElementById("modalSave").addEventListener("click", () => {
+        modal.style.display = "none";
+    });
+
+     */
+</script>
 </body>
 </html>

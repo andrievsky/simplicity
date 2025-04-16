@@ -1,17 +1,9 @@
-import Signal from './signal.js';
+import {Signal} from './signal.js';
 
-// Use Promise???
-const AppModel = function() {
-    this.onUpdateItems = new Promise();
-
-    this.updateItems = function(data) {
-        this.onUpdateItems.resolve(data);
-    }
+export function Model() {
+    const items = Signal([]);
+    const selectedItem = Signal(null);
 
 
-
-
-
+    return {items, selectedItem};
 }
-
-export default AppModel;
