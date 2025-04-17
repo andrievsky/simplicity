@@ -1,9 +1,12 @@
 import {cloneTemplate, updateTemplate} from "../template.js";
 import {FormReader} from "../form-reader.js";
 
-export function ItemEditForm(item, model, service, templates, close) {
+export function ItemEditForm(item, model, service, templates) {
     const frag = cloneTemplate(templates["item-edit"]);
     updateTemplate(frag, item);
+    const close = () => {
+        model.selectedItem.set(null);
+    }
     const element = frag.firstElementChild;
     const saveButton = frag.querySelector('.save');
     saveButton.addEventListener("click", (e) => {

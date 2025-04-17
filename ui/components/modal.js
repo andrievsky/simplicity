@@ -7,10 +7,7 @@ export function ModalComponent(container, model, service, templates) {
             console.error("No item to edit");
             return;
         }
-        const close = function () {
-            model.selectedItem.set(null);
-        }
-        const itemEditForm = new ItemEditForm(item, model, service, templates, close);
+        const itemEditForm = new ItemEditForm(item, model, service, templates);
         show(itemEditForm);
     };
     const show = function (frag) {
