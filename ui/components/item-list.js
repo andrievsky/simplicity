@@ -1,6 +1,6 @@
 import {cloneTemplate, updateTemplate} from "../template.js";
 
-export function ItemListComponent(container, model, itemTemplate) {
+export function ItemListComponent(container, model, templates) {
     const subscriptions = [];
     const showItems = (items) => {
         if (!items || items.length === 0) {
@@ -10,7 +10,7 @@ export function ItemListComponent(container, model, itemTemplate) {
 
         let nodes = [];
         items.forEach((item) => {
-            const frag = cloneTemplate(itemTemplate);
+            const frag = cloneTemplate(templates["item"]);
             updateTemplate(frag, item);
             const editButton = frag.querySelector('.edit-button');
             editButton.addEventListener("click", (e) => {

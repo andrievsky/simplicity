@@ -1,31 +1,26 @@
-import {cloneTemplate, updateTemplate} from "../template.js";
+import {ItemEditForm} from "./item-edit-form.js";
 
-export function ModalComponent(container, model, itemEditTemplate) {
+export function ModalComponent(container, model, service, templates) {
     const subscriptions = [];
     const showEditItem = function (item) {
-        const frag = cloneTemplate(itemEditTemplate);
-        updateTemplate(frag, item);
-        const saveButton = frag.querySelector('.save-button');
-        saveButton.addEventListener("click", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            hide();
-        });
-        const cancelButton = frag.querySelector('.cancel-button');
-        cancelButton.addEventListener("click", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            hide();
-        });
-        container.replaceChildren(frag);
-        show();
+        if (!item) {
+            console.error("No item to edit");
+            return;
+        }
+        const close = function () {
+            model.selectedItem.set(null);
+        }
+        const itemEditForm = new ItemEditForm(item, model, service, templates, close);
+        show(itemEditForm);
     };
-    const show = function () {
+    const show = function (frag) {
+        container.replaceChildren(frag);
         container.style.display = "flex";
     };
 
     const hide = function () {
         container.style.display = "none";
+        container.replaceChildren();
     };
 
     const init = () => {

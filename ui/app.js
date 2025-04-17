@@ -1,4 +1,4 @@
-import {BackendService} from './backend.js';
+import {BackendService} from './service.js';
 import {Model} from "./model.js";
 import {HeaderComponent} from "./components/header.js";
 import {ItemListComponent} from "./components/item-list.js";
@@ -10,20 +10,22 @@ const init = async () => {
     const content = document.getElementById('contentContainer');
     const footer = document.getElementById('footerContainer');
     const modal = document.getElementById("modalContainer");
-    const itemTemplate = document.getElementById('item-template');
-    const itemEditTemplate = document.getElementById('item-edit-template');
+    const templates = {
+        "item": document.getElementById('item-template'),
+        "item-edit": document.getElementById('item-edit-template')
+    };
 
-    let backend = new BackendService("");
+    let service = new BackendService("");
     let model = new Model();
-    let modalComponent = new ModalComponent(modal, model, itemEditTemplate);
+    let modalComponent = new ModalComponent(modal, model, service, templates);
     modalComponent.init();
     let headerComponent = new HeaderComponent(header, model);
     headerComponent.init();
-    let itemListComponent = new ItemListComponent(content, model, itemTemplate);
+    let itemListComponent = new ItemListComponent(content, model, templates);
     itemListComponent.init();
     let footerComponent = new FooterComponent(footer);
     footerComponent.init();
-    await backend.listItems().then((result) => {
+    await service.listItems().then((result) => {
         if (result.ok()) {
             model.items.set(result.data);
         } else {

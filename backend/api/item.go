@@ -181,6 +181,7 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 	h := w.Header()
 	h.Set("Content-Type", "application/json; charset=utf-8")
 	h.Set("X-Content-Type-Options", "nosniff")
+	slog.Error("ItemHandler", "Request:", r, "Error:", err.Error())
 	msg, _ := json.Marshal(map[string]string{"error": err.Error()})
 	http.Error(w, string(msg), resolveErrorCode(err))
 }
