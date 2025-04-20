@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"strings"
 	"testing"
 )
 
@@ -33,7 +34,7 @@ func TestInMemoryBlobStore_List(t *testing.T) {
 		store := NewInMemoryBlobStore()
 		ctx := context.Background()
 		for _, o := range tt.put {
-			store.Put(ctx, o.key, []byte(o.data))
+			store.Put(ctx, o.key, strings.NewReader(o.data), nil)
 		}
 		for _, o := range tt.list {
 			result, err := store.List(ctx, o.prefix, o.delimiter)

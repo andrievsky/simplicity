@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -89,26 +88,4 @@ func readBody(resp *http.Response) string {
 		return "error reading body: " + err.Error()
 	}
 	return string(bodyBytes)
-}
-
-func makeItem(id, title, description string, tags ...string) string {
-	item := items.Item{
-		ItemMetadata: items.ItemMetadata{
-			ID:        id,
-			CreatedAt: testTimestamp,
-			UpdatedAt: testTimestamp,
-		},
-		ItemData: items.ItemData{
-			Title:       title,
-			Description: description,
-			Tags:        tags,
-		},
-	}
-
-	json, _ := json.Marshal(item)
-	return string(json)
-}
-
-func makeItems(items ...string) string {
-	return fmt.Sprintf("[%s]", strings.Join(items, ","))
 }

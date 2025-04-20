@@ -55,5 +55,76 @@ export function ItemEditForm(item, model, service, templates) {
         };
     };
 
+    const dropZone = frag.querySelector('.drop-zone');
+    const input = frag.querySelector('.image-upload');
+    const previewList = frag.querySelector('.image-preview-list');
+    let uploadedImages = [];
+
+    dropZone.addEventListener("click", () => input.click());
+
+    dropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.classList.add("highlight");
+    });
+    dropZone.addEventListener("dragleave", () => {
+        dropZone.classList.remove("highlight");
+    });
+    dropZone.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("highlight");
+        await handleFiles(e.dataTransfer.files);
+    });
+
+    input.addEventListener("change", async (e) => {
+        await handleFiles(e.target.files);
+    });
+
+    async function handleFiles(files) {
+        for (const file of files) {
+
+
+            const placeholder = createPreview("loading");
+            previewList.appendChild(placeholder);
+
+            const url = await service.uploadImage(file);
+            if (url) {
+                placeholder.replaceWith(createPreview("success", url));
+                uploadedImages.push(url);
+            } else {
+                placeholder.replaceWith(createPreview("error"));
+            }
+        }
+    }
+
+    function createPreview(state, url = null) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "preview";
+
+        if (state === "loading") {
+            wrapper.textContent = "Uploading...";
+        } else if (state === "success") {
+            const img = document.createElement("images");
+            img.src = url;
+            img.className = "preview-image";
+
+            const remove = document.createElement("button");
+            remove.textContent = "✖";
+            remove.className = "remove-image";
+            remove.addEventListener("click", () => {
+                uploadedImages = uploadedImages.filter(u => u !== url);
+                wrapper.remove();
+            });
+
+            wrapper.appendChild(img);
+            wrapper.appendChild(remove);
+        } else if (state === "error") {
+            wrapper.textContent = "Failed to upload";
+            wrapper.classList.add("error");
+        }
+
+        return wrapper;
+    }
+
+
     return frag;
 }

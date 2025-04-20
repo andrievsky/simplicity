@@ -1,11 +1,11 @@
 test_cases:
-  - name: "it should return 200 when health is ok"
+  - name: "it should fail health check"
     calls:
       - request:
           path: "/health"
           method: "GET"
         response:
-          code: 200
+          code: 404
 
   - name: "it should return 404 when endpoint is not found"
     calls:

@@ -18,7 +18,22 @@ export function BackendService(host) {
         return fetchResource(`${host}/api/item/${id}`, 'PUT', item);
     }
 
-    return {listItems, getItem, createItem, updateItem};
+    const uploadImage = async function (file) {
+        if (!file) return ErrorResult("File is required");
+        const formData = new FormData();
+        formData.append('file', file);
+        return fetchResource(`${host}/api/image/upload`, 'POST', formData);
+    }
+
+    const getImage = async function (id, format) {
+        if (!id) return ErrorResult("ID is required");
+        if (!format) return ErrorResult("Format is required");
+        const url = `${host}/api/image/${id}?format=${format}`;
+        return fetchResource(url, 'GET');
+
+    }
+
+    return {listItems, getItem, createItem, updateItem, uploadImage};
 }
 const TIMEOUT_MS = 5000;
 

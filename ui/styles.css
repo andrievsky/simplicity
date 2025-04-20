@@ -202,3 +202,48 @@ footer {
 .modal .cancel:hover {
     background-color: #777;
 }
+
+
+
+
+/* Image Upload Styles */
+.image-upload-wrapper {
+    border: 1px dashed #ccc;
+    padding: 1em;
+    margin-bottom: 1em;
+    position: relative;
+}
+.drop-zone {
+    text-align: center;
+    padding: 1em;
+    cursor: pointer;
+    color: #666;
+}
+.drop-zone.highlight {
+    border: 2px dashed #666;
+    background: #f0f0f0;
+}
+.image-preview-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+    margin-top: 1em;
+}
+.preview {
+    position: relative;
+}
+.preview img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border: 1px solid #ccc;
+}
+.remove-image {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: #fff;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+}
