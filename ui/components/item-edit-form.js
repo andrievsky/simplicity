@@ -81,13 +81,12 @@ export function ItemEditForm(item, model, service, templates) {
 
     async function handleFiles(files) {
         for (const file of files) {
-
-
             const placeholder = createPreview("loading");
             previewList.appendChild(placeholder);
 
-            const url = await service.uploadImage(file);
-            if (url) {
+            const response = await service.uploadImage(file);
+            if (response.ok()) {
+                const url = "/api/image/files/"+response.data.id+"?format=source";
                 placeholder.replaceWith(createPreview("success", url));
                 uploadedImages.push(url);
             } else {
@@ -103,7 +102,8 @@ export function ItemEditForm(item, model, service, templates) {
         if (state === "loading") {
             wrapper.textContent = "Uploading...";
         } else if (state === "success") {
-            const img = document.createElement("images");
+            console.log("Image uploaded successfully:", url)
+            const img = document.createElement("img");
             img.src = url;
             img.className = "preview-image";
 

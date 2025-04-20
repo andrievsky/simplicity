@@ -25,6 +25,15 @@ import (
 		}
 	}
 */
+func Error(w http.ResponseWriter, error string, code int) {
+	h := w.Header()
+	h.Set("Content-Type", "application/json; charset=utf-8")
+	h.Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(code)
+	msg, _ := json.Marshal(map[string]string{"error": error})
+	http.Error(w, string(msg), code)
+}
+
 func WriteData(w http.ResponseWriter, r *http.Request, data any, status int) {
 	h := w.Header()
 	h.Set("Content-Type", "application/json; charset=utf-8")

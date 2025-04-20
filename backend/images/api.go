@@ -58,7 +58,7 @@ func (h *ImageApi) list(w http.ResponseWriter, r *http.Request) {
 func (h *ImageApi) post(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(maxUploadSize)
 	if err != nil {
-		http.Error(w, "failed to parse form", http.StatusBadRequest)
+		svc.Error(w, fmt.Errorf("failed to parse form: %w", err).Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -68,24 +68,24 @@ func (h *ImageApi) post(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(r.MultipartForm.File) > 1 {
-		http.Error(w, "only one file is supported", http.StatusBadRequest)
+		svc.Error(w, "only one file is supported", http.StatusBadRequest)
 		return
 	}
 
 	if len(r.MultipartForm.Value) > 0 {
-		http.Error(w, "only one file is supported", http.StatusBadRequest)
+		svc.Error(w, "only one file is supported", http.StatusBadRequest)
 		return
 	}
 
 	fileHeader := r.MultipartForm.File["file"][0]
 	if fileHeader == nil {
-		http.Error(w, "missing file field", http.StatusBadRequest)
+		svc.Error(w, "missing file field", http.StatusBadRequest)
 		return
 	}
 
 	metadata, err := buildMetadata(time.Now(), fileHeader)
 	if err != nil {
-		http.Error(w, fmt.Errorf("failed to build metadata: %w", err).Error(), http.StatusBadRequest)
+		svc.Error(w, fmt.Errorf("failed to build metadata: %w", err).Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -93,14 +93,14 @@ func (h *ImageApi) post(w http.ResponseWriter, r *http.Request) {
 
 	file, err := fileHeader.Open()
 	if err != nil {
-		http.Error(w, "failed to open file", http.StatusBadRequest)
+		svc.Error(w, "failed to open file", http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
 
 	err = h.store.Put(r.Context(), path, file, metadata.Map())
 	if err != nil {
-		svc.WriteError(w, r, fmt.Errorf("failed to store image: %w", err))
+		svc.Error(w, fmt.Errorf("failed to store image: %w", err).Error(), http.StatusBadRequest)
 		return
 	}
 	w.Header().Set("Location", "/files/"+metadata.ID)
@@ -108,6 +108,7 @@ func (h *ImageApi) post(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ImageApi) get(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("get", r.URL.Path)
 	id := r.PathValue("id")
 	if err := validateId(id); err != nil {
 		svc.WriteError(w, r, err)

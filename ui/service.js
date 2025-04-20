@@ -22,7 +22,9 @@ export function BackendService(host) {
         if (!file) return ErrorResult("File is required");
         const formData = new FormData();
         formData.append('file', file);
-        return fetchResource(`${host}/api/image/upload`, 'POST', formData);
+        const headers = new Headers();
+        headers.append('Accept', 'application/json');
+        return fetchResource(`${host}/api/image/upload`, 'POST', formData, headers);
     }
 
     const getImage = async function (id, format) {
@@ -37,7 +39,7 @@ export function BackendService(host) {
 }
 const TIMEOUT_MS = 5000;
 
-const fetchResource = async function (url, method = 'GET', body = null) {
+const fetchResource = async function (url, method = 'GET', body = null, headers = null) {
     if (!url) throw new Error("URL is required");
     if (!method) throw new Error("Method is required");
 
@@ -55,13 +57,26 @@ const fetchResource = async function (url, method = 'GET', body = null) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
+    const isFormData = body instanceof FormData;
+
+    // Set default headers if not provided
+    if (!headers) {
+        headers = new Headers();
+        if (!isFormData) {
+            headers.append('Content-Type', 'application/json');
+        }
+        headers.append('Accept', 'application/json');
+    }
+
     try {
         const response = await fetch(url, {
             method,
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: body ? JSON.stringify(body) : null,
+            headers,
+            body: body
+                ? isFormData
+                    ? body // send FormData directly
+                    : JSON.stringify(body) // JSON for other types
+                : null,
             signal: controller.signal
         });
 
@@ -88,6 +103,7 @@ const fetchResource = async function (url, method = 'GET', body = null) {
         return new Result(null, 0, isAbort ? 'Request timed out' : `Fetch error: ${error.message}`);
     }
 }
+
 
 
 function Result(data, status, error) {
