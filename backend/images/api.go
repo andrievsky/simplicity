@@ -7,7 +7,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
-	"regexp"
 	"simplicity/genid"
 	"simplicity/storage"
 	"simplicity/svc"
@@ -16,7 +15,8 @@ import (
 )
 
 type ImageApi struct {
-	store storage.BlobStore
+	store      storage.BlobStore
+	idProvider genid.Provider
 }
 
 type Image struct {
@@ -26,9 +26,9 @@ type Image struct {
 
 const maxUploadSize = 48 * 1024 * 1024 // 48MB
 
-func NewImageApi(store storage.BlobStore) *http.ServeMux {
+func NewImageApi(store storage.BlobStore, idProvider genid.Provider) *http.ServeMux {
 	router := http.NewServeMux()
-	api := &ImageApi{store}
+	api := &ImageApi{store, idProvider}
 
 	router.HandleFunc("GET /files/", api.list)
 	router.HandleFunc("POST /upload", api.post)
@@ -83,7 +83,9 @@ func (h *ImageApi) post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metadata, err := buildMetadata(time.Now(), fileHeader)
+	id := h.idProvider.Generate()
+
+	metadata, err := buildMetadata(id, fileHeader)
 	if err != nil {
 		svc.Error(w, fmt.Errorf("failed to build metadata: %w", err).Error(), http.StatusBadRequest)
 		return
@@ -110,7 +112,7 @@ func (h *ImageApi) post(w http.ResponseWriter, r *http.Request) {
 func (h *ImageApi) get(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("get", r.URL.Path)
 	id := r.PathValue("id")
-	if err := validateId(id); err != nil {
+	if err := h.idProvider.Validate(id); err != nil {
 		svc.WriteError(w, r, err)
 		return
 	}
@@ -148,7 +150,7 @@ func (h *ImageApi) get(w http.ResponseWriter, r *http.Request) {
 
 func (h *ImageApi) delete(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	if err := validateId(id); err != nil {
+	if err := h.idProvider.Validate(id); err != nil {
 		svc.WriteError(w, r, err)
 		return
 	}
@@ -180,7 +182,7 @@ func storagePath(id string, format *Format) string {
 	return storage.JoinPath(id, format.FileName())
 }
 
-func buildMetadata(ts time.Time, fileHeader *multipart.FileHeader) (Metadata, error) {
+func buildMetadata(id string, fileHeader *multipart.FileHeader) (Metadata, error) {
 	originalName := fileHeader.Filename
 	ext := filepath.Ext(originalName)
 	if ext == "" {
@@ -190,29 +192,12 @@ func buildMetadata(ts time.Time, fileHeader *multipart.FileHeader) (Metadata, er
 	if err != nil {
 		return Metadata{}, fmt.Errorf("unsupported file format: %w", err)
 	}
-	if len(originalName) > 16 {
-		originalName = originalName[:16]
-	}
-	id := buildId(ts)
 	return Metadata{
 		ID:           id,
 		Format:       Source.Name,
 		Timestamp:    time.Now().Format(time.RFC3339),
-		OriginalName: fileHeader.Filename,
+		OriginalName: originalName,
 	}, nil
-}
-
-func buildId(ts time.Time) string {
-	return ts.Format("20060102150405") + "_" + genid.GeneratePartialID(8)
-}
-
-var idPattern = regexp.MustCompile(`^(\d{14})_([a-zA-Z0-9]{8})$`)
-
-func validateId(id string) error {
-	if !idPattern.MatchString(id) {
-		return fmt.Errorf("invalid id format")
-	}
-	return nil
 }
 
 func getExtOrElse(metadata map[string]string, fallback string) string {

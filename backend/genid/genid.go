@@ -1,12 +1,37 @@
 package genid
 
 import (
-	"github.com/google/uuid"
+	"github.com/bwmarrin/snowflake"
 	"math/rand"
 )
 
-func GenerateUUID() string {
-	return uuid.New().String()
+type Provider interface {
+	Generate() string
+	Validate(string) error
+}
+
+type SnowflakeProvider struct {
+	instance *snowflake.Node
+}
+
+func NewSnowflakeProvider(nodeID int64) (*SnowflakeProvider, error) {
+	node, err := snowflake.NewNode(nodeID)
+	if err != nil {
+		return nil, err
+	}
+	return &SnowflakeProvider{instance: node}, nil
+}
+
+func (p *SnowflakeProvider) Generate() string {
+	return p.instance.Generate().String()
+}
+
+func (p *SnowflakeProvider) Validate(id string) error {
+	_, err := snowflake.ParseString(id)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 const dict = "abcdefghijklmnopqrstuvwxyz0123456789"
