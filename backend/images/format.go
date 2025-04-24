@@ -1,31 +1,39 @@
 package images
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
-type AspectRatio struct {
+type Format struct {
+	Name   string
+	Ext    string
 	Width  int
 	Height int
 }
 
-type Format struct {
-	Name        string
-	Ext         string
-	Width       int
-	AspectRatio AspectRatio
-}
+const JpegExt = "jpeg"
+const PngExt = "png"
 
-func (f Format) FileName() string {
+func (f *Format) FileName() string {
 	return fmt.Sprintf("%s.%s", f.Name, f.Ext)
 }
 
-var Source = &Format{"source", "data", 0, AspectRatio{}}
-var WebLange = &Format{"web-std", "jpeg", 1280, AspectRatio{3, 2}}
-var WebThumbSquare = &Format{"web-thumb-sq", "jpeg", 400, AspectRatio{1, 1}}
+func (f *Format) SizeDefined() bool {
+	return f.Width > 0
+}
+
+var Source = &Format{"source", "data", 0, 0}
+var Canonical = &Format{"canonical", PngExt, 0, 0}
+var WebLange = &Format{"web-std", JpegExt, 1280, 853}           //3:2
+var WebThumbSquare = &Format{"web-thumb-sq", JpegExt, 400, 400} //1:1
 
 func resolveFormat(candidate string) (*Format, error) {
 	switch candidate {
 	case Source.Name:
 		return Source, nil
+	case Canonical.Name:
+		return Canonical, nil
 	case WebLange.Name:
 		return WebLange, nil
 	case WebThumbSquare.Name:
@@ -35,12 +43,17 @@ func resolveFormat(candidate string) (*Format, error) {
 	}
 }
 
+func resolveExtFromFileName(fileName string) (string, error) {
+	ext := fileName[strings.LastIndex(fileName, ".")+1:]
+	return resolveExt(ext)
+}
+
 func resolveExt(ext string) (string, error) {
 	switch ext {
 	case "jpeg", "jpg":
-		return "jpeg", nil
+		return JpegExt, nil
 	case "png":
-		return "png", nil
+		return PngExt, nil
 	default:
 		return "", fmt.Errorf("unknown extension: %s", ext)
 	}
@@ -48,9 +61,9 @@ func resolveExt(ext string) (string, error) {
 
 func resolveMime(ext string) string {
 	switch ext {
-	case "jpeg", "jpg":
+	case JpegExt:
 		return "image/jpeg"
-	case "png":
+	case PngExt:
 		return "image/png"
 	default:
 		return "application/octet-stream"

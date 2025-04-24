@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	fmt.Println(config.BackendInfo())
+	fmt.Printf("Backend %s Version %s\n", config.BackendName, config.BackendVersion)
 	registry := items.NewInMemoryRegistry(time.Now)
 	store := storage.NewInMemoryBlobStore()
 	populateWithMockData(registry)
@@ -36,8 +36,12 @@ func setupServer(registry items.Registry, store storage.BlobStore) *http.ServeMu
 	mux.Handle("/api/", http.StripPrefix("/api", itemsApi))
 	mux.Handle("/", svc.WrapHandler(
 		http.StripPrefix("/", http.FileServer(http.Dir("../ui/")))))
-	mux.Handle("/api/image/", http.StripPrefix("/api/image",
-		images.NewImageApi(storage.NewPrefixBlobStore(store, "image/"), idProvider)))
+	mux.Handle("/api/image/", svc.WrapHandler(http.StripPrefix("/api/image",
+		images.NewImageApi(storage.NewPrefixBlobStore(store, "image/"), idProvider))))
+
+	mux.HandleFunc("/api/version", func(w http.ResponseWriter, r *http.Request) {
+		svc.WriteData(w, r, config.BackendInfo(), http.StatusOK)
+	})
 
 	return mux
 }

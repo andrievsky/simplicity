@@ -5,6 +5,7 @@ type Metadata struct {
 	Format       string `json:"format"`
 	Timestamp    string `json:"timestamp"`
 	OriginalName string `json:"original_name"`
+	Extension    string `json:"extension"`
 }
 
 func (t Metadata) Map() map[string]string {

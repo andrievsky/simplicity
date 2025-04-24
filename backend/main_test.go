@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"simplicity/items"
+	"simplicity/storage"
 	"strings"
 	"testing"
 	"time"
@@ -23,7 +24,7 @@ func runTestServer() *httptest.Server {
 	registry := items.NewInMemoryRegistry(func() time.Time {
 		return testTimestamp
 	})
-	return httptest.NewServer(setupServer(registry))
+	return httptest.NewServer(setupServer(registry, storage.NewInMemoryBlobStore()))
 }
 
 type Request struct {

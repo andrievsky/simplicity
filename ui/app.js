@@ -23,7 +23,7 @@ const init = async () => {
     headerComponent.init();
     let itemListComponent = new ItemListComponent(content, model, templates);
     itemListComponent.init();
-    let footerComponent = new FooterComponent(footer);
+    let footerComponent = new FooterComponent(footer, service);
     footerComponent.init();
     await service.listItems().then((result) => {
         if (result.ok()) {

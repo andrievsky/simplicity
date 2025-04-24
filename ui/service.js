@@ -35,7 +35,11 @@ export function BackendService(host) {
 
     }
 
-    return {listItems, getItem, createItem, updateItem, uploadImage};
+    const getVersion = async function () {
+        return fetchResource(`${host}/api/version`, 'GET');
+    }
+
+    return {listItems, getItem, createItem, updateItem, uploadImage, getVersion};
 }
 const TIMEOUT_MS = 5000;
 
