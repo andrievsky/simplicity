@@ -27,19 +27,17 @@ export function BackendService(host) {
         return fetchResource(`${host}/api/image/upload`, 'POST', formData, headers);
     }
 
-    const getImage = async function (id, format) {
+    const deleteImage = async function (id) {
         if (!id) return ErrorResult("ID is required");
-        if (!format) return ErrorResult("Format is required");
-        const url = `${host}/api/image/${id}?format=${format}`;
-        return fetchResource(url, 'GET');
-
+        return fetchResource(`${host}/api/image/files/${id}`, 'DELETE');
     }
+
 
     const getVersion = async function () {
         return fetchResource(`${host}/api/version`, 'GET');
     }
 
-    return {listItems, getItem, createItem, updateItem, uploadImage, getVersion};
+    return {listItems, getItem, createItem, updateItem, uploadImage, deleteImage, getVersion};
 }
 const TIMEOUT_MS = 5000;
 

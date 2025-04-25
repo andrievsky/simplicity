@@ -6,7 +6,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"path/filepath"
 	"simplicity/oops"
 	"simplicity/svc"
 )
@@ -40,7 +39,7 @@ func (h *ImageApi) get(w http.ResponseWriter, r *http.Request) {
 	header := w.Header()
 	ext := format.Ext
 	if format == Source {
-		ext = getExtOrElse(metadata, ext)
+		ext = MetadataReader{metadata}.Extension()
 	}
 	header.Set("Content-Type", resolveMime(ext))
 	if metadata != nil {
@@ -49,7 +48,7 @@ func (h *ImageApi) get(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if _, err := io.Copy(w, reader); err != nil {
+	if _, err = io.Copy(w, reader); err != nil {
 		slog.Error("ImageApi", "Request:", r, "Error:", err.Error())
 		return
 	}
@@ -66,19 +65,4 @@ func (h *ImageApi) createImageVariant(ctx context.Context, id string, format *Fo
 		return fmt.Errorf("failed to transcode image: %w", err)
 	}
 	return h.store.Put(ctx, storagePath(id, format), tReader, metadata)
-}
-
-func getExtOrElse(metadata map[string]string, fallback string) string {
-	if metadata == nil {
-		return fallback
-	}
-	m := metadata["original_name"]
-	if m == "" {
-		return fallback
-	}
-	ext := filepath.Ext(m)
-	if len(ext) < 2 {
-		return fallback
-	}
-	return ext[1:]
 }

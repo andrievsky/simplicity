@@ -18,12 +18,10 @@ func (t Metadata) Map() map[string]string {
 	}
 }
 
-func NewMetadataFromMap(m map[string]string) Metadata {
-	return Metadata{
-		ID:           m["id"],
-		Format:       m["format"],
-		Timestamp:    m["timestamp"],
-		OriginalName: m["original_name"],
-		Extension:    m["extension"],
-	}
+type MetadataReader struct {
+	source map[string]string
+}
+
+func (m MetadataReader) Extension() string {
+	return m.source["extension"]
 }
