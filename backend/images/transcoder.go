@@ -8,9 +8,11 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
+	"log/slog"
 )
 
 func Transcode(in *Format, out *Format, r io.Reader, w io.Writer) error {
+	slog.Info("Transcode", "in", in, "out", out)
 	if in == nil || out == nil {
 		return errors.New("format cannot be nil")
 	}

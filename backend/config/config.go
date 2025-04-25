@@ -1,7 +1,7 @@
 package config
 
 const BackendName = "Simplicity"
-const BackendVersion = "0.3.1"
+const BackendVersion = "0.3.2"
 const BackendPort = "8090"
 
 type Info struct {

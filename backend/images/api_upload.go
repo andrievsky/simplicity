@@ -3,8 +3,10 @@ package images
 import (
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"simplicity/svc"
+	"time"
 )
 
 func (h *ImageApi) post(w http.ResponseWriter, r *http.Request) {
@@ -48,7 +50,6 @@ func (h *ImageApi) post(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// Save the original file to storage (blocking)
 	err = h.store.Put(r.Context(), sourcePath, file, metadata.Map())
 	if err != nil {
 		svc.Error(w, fmt.Errorf("failed to store image: %w", err).Error(), http.StatusBadRequest)
@@ -90,4 +91,19 @@ func transcodeFile(in *Format, out *Format, r io.Reader) (io.Reader, error) {
 	}()
 
 	return pr, nil
+}
+
+func buildMetadata(id string, fileHeader *multipart.FileHeader) (Metadata, error) {
+	originalName := fileHeader.Filename
+	ext, err := resolveExtFromFileName(originalName)
+	if err != nil {
+		return Metadata{}, fmt.Errorf("failed to resolve extension: %w", err)
+	}
+	return Metadata{
+		ID:           id,
+		Format:       Source.Name,
+		Timestamp:    time.Now().Format(time.RFC3339),
+		OriginalName: originalName,
+		Extension:    ext,
+	}, nil
 }

@@ -86,7 +86,7 @@ export function ItemEditForm(item, model, service, templates) {
 
             const response = await service.uploadImage(file);
             if (response.ok()) {
-                const url = "/api/image/files/"+response.data.id+"?format=canonical";
+                const url = "/api/image/files/"+response.data.id+"?format=web-thumb-sq";
                 placeholder.replaceWith(createPreview("success", url));
                 uploadedImages.push(url);
             } else {

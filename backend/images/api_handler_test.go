@@ -3,14 +3,14 @@ package images
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"simplicity/genid"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"simplicity/storage"
 )
@@ -28,7 +28,9 @@ func createMultipartFormFile(t *testing.T, fieldName, filename string, content [
 
 func TestImageApi_HappyPath(t *testing.T) {
 	store := storage.NewPrefixBlobStore(storage.NewInMemoryBlobStore(), "image/")
-	router := NewImageApi(store)
+	idProvider, err := genid.NewSnowflakeProvider(1)
+	require.NoError(t, err)
+	router := NewImageApi(store, idProvider)
 
 	var imageID string
 	var imageData = []byte("\xFF\xD8\xFF\xE0" + "fake jpg data")
@@ -88,7 +90,9 @@ func TestImageApi_HappyPath(t *testing.T) {
 
 func TestImageApi_UnhappyPath(t *testing.T) {
 	store := storage.NewInMemoryBlobStore()
-	router := NewImageApi(store)
+	idProvider, err := genid.NewSnowflakeProvider(1)
+	require.NoError(t, err)
+	router := NewImageApi(store, idProvider)
 
 	t.Run("POST /upload with no file", func(t *testing.T) {
 		body := &bytes.Buffer{}
