@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"golang.org/x/image/draw"
 	"image"
+	"image/color"
 	"image/jpeg"
 	"image/png"
 	"io"
 	"log/slog"
+	"math"
 )
 
 func Transcode(in *Format, out *Format, r io.Reader, w io.Writer) error {
@@ -30,7 +32,7 @@ func Transcode(in *Format, out *Format, r io.Reader, w io.Writer) error {
 		return fmt.Errorf("failed to decode image: %w", err)
 	}
 	if out.SizeDefined() {
-		img = resizeImage(img, out.Width, out.Height)
+		img = resizeWithBackground(img, out.Width, out.Height, color.White)
 	}
 	if err := encode(out, img, w); err != nil {
 		return fmt.Errorf("failed to encode image: %w", err)
@@ -41,6 +43,74 @@ func Transcode(in *Format, out *Format, r io.Reader, w io.Writer) error {
 func resizeImage(img image.Image, width, height int) image.Image {
 	dst := image.NewRGBA(image.Rect(0, 0, width, height))
 	draw.CatmullRom.Scale(dst, dst.Bounds(), img, img.Bounds(), draw.Over, nil)
+	return dst
+}
+
+func resizeWithCrop(img image.Image, width, height int) image.Image {
+	// original dimensions
+	origBounds := img.Bounds()
+	origW := origBounds.Dx()
+	origH := origBounds.Dy()
+
+	// compute scale ratios
+	scaleX := float64(width) / float64(origW)
+	scaleY := float64(height) / float64(origH)
+	// choose the larger scale → no empty bars, but some overflow to crop
+	scale := math.Max(scaleX, scaleY)
+
+	// dimensions after scaling
+	newW := int(math.Ceil(float64(origW) * scale))
+	newH := int(math.Ceil(float64(origH) * scale))
+
+	// scale the entire image
+	scaled := image.NewRGBA(image.Rect(0, 0, newW, newH))
+	draw.CatmullRom.Scale(scaled, scaled.Bounds(), img, origBounds, draw.Over, nil)
+
+	// compute top-left of the crop window to center-crop
+	offsetX := (newW - width) / 2
+	offsetY := (newH - height) / 2
+	cropRect := image.Rect(offsetX, offsetY, offsetX+width, offsetY+height)
+
+	// extract the crop
+	dst := image.NewRGBA(image.Rect(0, 0, width, height))
+	draw.Draw(dst, dst.Bounds(), scaled, cropRect.Min, draw.Src)
+
+	return dst
+}
+
+func resizeWithBackground(img image.Image, width, height int, bgColor color.Color) image.Image {
+	origBounds := img.Bounds()
+	origW, origH := origBounds.Dx(), origBounds.Dy()
+
+	// compute uniform scale to fit
+	scaleX := float64(width) / float64(origW)
+	scaleY := float64(height) / float64(origH)
+	scale := math.Min(scaleX, scaleY)
+
+	// new dimensions after scaling
+	newW := int(math.Ceil(float64(origW) * scale))
+	newH := int(math.Ceil(float64(origH) * scale))
+
+	// scale the source image
+	scaled := image.NewRGBA(image.Rect(0, 0, newW, newH))
+	draw.CatmullRom.Scale(scaled, scaled.Bounds(), img, origBounds, draw.Over, nil)
+
+	// create destination filled with bgColor
+	dst := image.NewRGBA(image.Rect(0, 0, width, height))
+	draw.Draw(dst, dst.Bounds(), &image.Uniform{bgColor}, image.Point{}, draw.Src)
+
+	// compute offsets to center
+	offsetX := (width - newW) / 2
+	offsetY := (height - newH) / 2
+
+	// draw the scaled image onto the background
+	draw.Draw(dst,
+		image.Rect(offsetX, offsetY, offsetX+newW, offsetY+newH),
+		scaled,
+		image.Point{},
+		draw.Over,
+	)
+
 	return dst
 }
 
