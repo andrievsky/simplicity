@@ -1,11 +1,16 @@
 import {cloneTemplate, updateTemplate} from "../template.js";
 import {FormReader} from "../form-reader.js";
+import {CollectionSignal, Signal} from "../signal.js";
+import {ItemEditFormImage} from "./item-edit-form-image.js";
 
 export function ItemEditForm(item, model, service, templates) {
     const frag = cloneTemplate(templates["item-edit"]);
+    const itemModel = new ItemEditFormModel(item);
+
     updateTemplate(frag, item);
     const close = () => {
         model.selectedItem.set(null);
+        itemModel.destroy();
     }
     const element = frag.firstElementChild;
     const saveButton = frag.querySelector('.save');
@@ -58,7 +63,24 @@ export function ItemEditForm(item, model, service, templates) {
     const dropZone = frag.querySelector('.drop-zone');
     const input = frag.querySelector('.image-upload');
     const previewList = frag.querySelector('.image-preview-list');
-    let uploadedImages = [];
+
+    const uploadedImageViews = {};
+
+    itemModel.uploadedImages.subscribeDelta((delta => {
+        if (delta.type === "add") {
+            const imageView = new ItemEditFormImage(delta.item, (id) => {
+                itemModel.uploadedImages.remove(id);
+            });
+            uploadedImageViews[delta.item] = previewList.appendChild(imageView.wrapper);
+        }
+        if (delta.type === "remove") {
+            const wrapper = uploadedImageViews[delta.item];
+            if (wrapper) {
+                wrapper.remove();
+                delete uploadedImageViews[delta.item];
+            }
+        }
+    }));
 
     dropZone.addEventListener("click", () => input.click());
 
@@ -81,56 +103,32 @@ export function ItemEditForm(item, model, service, templates) {
 
     async function handleFiles(files) {
         for (const file of files) {
-            const placeholder = createPreview("loading");
-            previewList.appendChild(placeholder);
-
             const response = await service.uploadImage(file);
             if (response.ok()) {
-                const url = "/api/image/files/"+response.data.id+"?format=web-thumb-sq";
-                placeholder.replaceWith(createPreview("success", url, response.data.id));
-                uploadedImages.push(url);
+                itemModel.uploadedImages.add(response.data.id);
             } else {
-                placeholder.replaceWith(createPreview("error"));
+                console.error("Error uploading image:", response.error);
             }
         }
     }
 
-    function createPreview(state, url, id) {
-        const wrapper = document.createElement("div");
-        wrapper.className = "preview";
-
-        if (state === "loading") {
-            wrapper.textContent = "Uploading...";
-        } else if (state === "success") {
-            console.log("Image uploaded successfully:", url)
-            const img = document.createElement("img");
-            img.src = url;
-            img.className = "preview-image";
-
-            const remove = document.createElement("button");
-            remove.textContent = "✖";
-            remove.className = "remove-image";
-            remove.addEventListener("click", () => {
-                uploadedImages = uploadedImages.filter(u => u !== url);
-                service.deleteImage(id).then((result) => {
-                    if (result.ok()) {
-                        wrapper.remove();
-                    } else {
-                        console.error("Error deleting image:", result.error);
-                    }
-                });
-            });
-
-            wrapper.appendChild(img);
-            wrapper.appendChild(remove);
-        } else if (state === "error") {
-            wrapper.textContent = "Failed to upload";
-            wrapper.classList.add("error");
-        }
-
-        return wrapper;
-    }
-
-
     return frag;
+}
+
+function ItemEditFormModel(item) {
+    const title = Signal(item.title || "Untitled");
+    const description = Signal(item.description || "");
+    const images = CollectionSignal(item.images || []);
+    const tags = CollectionSignal(item.tags || []);
+    const uploadedImages = CollectionSignal([]);
+
+    const destroy = () => {
+        title.unsubscribeAll();
+        description.unsubscribeAll();
+        images.unsubscribeAll();
+        tags.unsubscribeAll();
+        uploadedImages.unsubscribeAll();
+    };
+
+    return { title, description, images, tags, uploadedImages, destroy };
 }
