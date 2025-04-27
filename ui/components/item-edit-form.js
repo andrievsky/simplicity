@@ -1,7 +1,7 @@
 import {cloneTemplate, updateTemplate} from "../template.js";
 import {FormReader} from "../form-reader.js";
 import {CollectionSignal, Signal} from "../signal.js";
-import {ItemEditFormImage} from "./item-edit-form-image.js";
+import {ItemEditFormUploadFiles} from "./item-edit-form-upload-files.js";
 
 export function ItemEditForm(item, model, service, templates) {
     const frag = cloneTemplate(templates["item-edit"]);
@@ -9,8 +9,9 @@ export function ItemEditForm(item, model, service, templates) {
 
     updateTemplate(frag, item);
     const close = () => {
-        model.selectedItem.set(null);
+        discardUploadedImages();
         itemModel.destroy();
+        model.selectedItem.set(null);
     }
     const element = frag.firstElementChild;
     const saveButton = frag.querySelector('.save');
@@ -60,56 +61,14 @@ export function ItemEditForm(item, model, service, templates) {
         };
     };
 
-    const dropZone = frag.querySelector('.drop-zone');
-    const input = frag.querySelector('.image-upload');
-    const previewList = frag.querySelector('.image-preview-list');
+    new ItemEditFormUploadFiles(frag, service, itemModel);
 
-    const uploadedImageViews = {};
-
-    itemModel.uploadedImages.subscribeDelta((delta => {
-        if (delta.type === "add") {
-            const imageView = new ItemEditFormImage(delta.item, (id) => {
-                itemModel.uploadedImages.remove(id);
+    const discardUploadedImages = () => {
+        itemModel.uploadedImages.forEach((id) => {
+            service.deleteImage(id).then(r => {
+                console.log("Deleting image:", id, r.ok() ? "OK" : "Failed");
             });
-            uploadedImageViews[delta.item] = previewList.appendChild(imageView.wrapper);
-        }
-        if (delta.type === "remove") {
-            const wrapper = uploadedImageViews[delta.item];
-            if (wrapper) {
-                wrapper.remove();
-                delete uploadedImageViews[delta.item];
-            }
-        }
-    }));
-
-    dropZone.addEventListener("click", () => input.click());
-
-    dropZone.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        dropZone.classList.add("highlight");
-    });
-    dropZone.addEventListener("dragleave", () => {
-        dropZone.classList.remove("highlight");
-    });
-    dropZone.addEventListener("drop", async (e) => {
-        e.preventDefault();
-        dropZone.classList.remove("highlight");
-        await handleFiles(e.dataTransfer.files);
-    });
-
-    input.addEventListener("change", async (e) => {
-        await handleFiles(e.target.files);
-    });
-
-    async function handleFiles(files) {
-        for (const file of files) {
-            const response = await service.uploadImage(file);
-            if (response.ok()) {
-                itemModel.uploadedImages.add(response.data.id);
-            } else {
-                console.error("Error uploading image:", response.error);
-            }
-        }
+        });
     }
 
     return frag;
