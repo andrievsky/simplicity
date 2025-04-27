@@ -64,7 +64,7 @@ export function ItemEditForm(item, model, service, templates) {
     new ItemEditFormUploadFiles(frag, service, itemModel);
 
     const discardUploadedImages = () => {
-        itemModel.uploadedImages.forEach((id) => {
+        itemModel.uploadedImages.get().forEach((id) => {
             service.deleteImage(id).then(r => {
                 console.log("Deleting image:", id, r.ok() ? "OK" : "Failed");
             });
