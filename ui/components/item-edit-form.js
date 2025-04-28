@@ -2,31 +2,46 @@ import {cloneTemplate, updateTemplate} from "../template.js";
 import {CollectionSignal, Signal} from "../signal.js";
 import {ItemEditFormUploadFiles} from "./item-edit-form-upload-files.js";
 import {ItemEditFormImages} from "./item-edit-form-images.js";
+import {ItemEditFormInput} from "./item-edit-form-input.js";
 
 export function ItemEditForm(item, model, service, templates) {
     const frag = cloneTemplate(templates["item-edit"]);
     const itemModel = new ItemEditFormModel(item);
+    const title = frag.querySelector('.title');
+    const description = frag.querySelector('.description');
+    const tags = frag.querySelector('.tags');
     const previewList = frag.querySelector('.image-preview-list');
 
     updateTemplate(frag, item);
-    const close = () => {
-        itemModel.destroy();
-        model.selectedItem.set(null);
-    }
-    const saveButton = frag.querySelector('.save');
-    saveButton.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        updateItem();
-    });
-    const cancelButton = frag.querySelector('.cancel');
-    cancelButton.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        discardUploadedImages().then(() => {
-            close();
-        });
-    });
+
+    new ItemEditFormInput(title, item.title, (newValue) => {
+        itemModel.title.set(newValue);
+    })
+
+    new ItemEditFormInput(description, item.description, (newValue) => {
+        itemModel.description.set(newValue);
+    })
+
+    new ItemEditFormInput(tags, item.tags, (newValue) => {
+        itemModel.tags.set(newValue);
+    })
+
+    new ItemEditFormImages(previewList, service, itemModel);
+
+    new ItemEditFormUploadFiles(frag, service, itemModel);
+
+    const discardUploadedImages = async () => {
+        const ids = itemModel.uploadedImages.get();
+
+        const deletePromises = ids.map((id) =>
+            service.deleteImage(id).then(r => {
+                console.log("Deleting image:", id, r.ok() ? "OK" : "Failed");
+                return r;
+            })
+        );
+
+        await Promise.all(deletePromises);
+    };
 
     const updateItem = () => {
         const id = itemModel.id;
@@ -54,22 +69,24 @@ export function ItemEditForm(item, model, service, templates) {
         });
     }
 
-    new ItemEditFormImages(previewList, service, itemModel);
-
-    new ItemEditFormUploadFiles(frag, service, itemModel);
-
-    const discardUploadedImages = async () => {
-        const ids = itemModel.uploadedImages.get();
-
-        const deletePromises = ids.map((id) =>
-            service.deleteImage(id).then(r => {
-                console.log("Deleting image:", id, r.ok() ? "OK" : "Failed");
-                return r;
-            })
-        );
-
-        await Promise.all(deletePromises);
-    };
+    const close = () => {
+        itemModel.destroy();
+        model.selectedItem.set(null);
+    }
+    const saveButton = frag.querySelector('.save');
+    saveButton.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        updateItem();
+    });
+    const cancelButton = frag.querySelector('.cancel');
+    cancelButton.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        discardUploadedImages().then(() => {
+            close();
+        });
+    });
 
     return frag;
 }
@@ -79,7 +96,7 @@ function ItemEditFormModel(item) {
     const title = Signal(item.title || "Untitled");
     const description = Signal(item.description || "");
     const images = CollectionSignal(item.images || []);
-    const tags = CollectionSignal(item.tags || []);
+    const tags = Signal(item.tags.toString() || "");
     const uploadedImages = CollectionSignal([]);
 
     const data = () => {
@@ -88,7 +105,7 @@ function ItemEditFormModel(item) {
             title: title.get(),
             description: description.get(),
             images: mergedImages,
-            tags: tags.get(),
+            tags: tags.get().split(",").map(tag => tag.trim()).filter(tag => tag !== ""),
         };
     }
 

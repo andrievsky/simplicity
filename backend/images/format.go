@@ -25,8 +25,9 @@ func (f *Format) SizeDefined() bool {
 
 var Source = &Format{"source", "data", 0, 0}
 var Canonical = &Format{"canonical", PngExt, 0, 0}
-var WebLange = &Format{"web-std", JpegExt, 1280, 853}           //3:2
-var WebThumbSquare = &Format{"web-thumb-sq", JpegExt, 100, 100} //1:1
+var WebLange = &Format{"web-std", JpegExt, 1280, 853} //3:2
+var WebPreview100 = &Format{"web-preview-100", JpegExt, 100, 100}
+var WebPreview280 = &Format{"web-preview-280", JpegExt, 280, 280}
 
 func resolveFormat(candidate string) (*Format, error) {
 	switch candidate {
@@ -36,8 +37,10 @@ func resolveFormat(candidate string) (*Format, error) {
 		return Canonical, nil
 	case WebLange.Name:
 		return WebLange, nil
-	case WebThumbSquare.Name:
-		return WebThumbSquare, nil
+	case WebPreview100.Name:
+		return WebPreview100, nil
+	case WebPreview280.Name:
+		return WebPreview280, nil
 	default:
 		return nil, fmt.Errorf("unknown format: %s", candidate)
 	}

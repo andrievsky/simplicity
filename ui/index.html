@@ -22,7 +22,7 @@
 
 <template id="item-template">
     <div class="card">
-        <img class="cover" data-key="images" src="" alt="Cover Image" />
+        <img class="preview" data-key="images" src="" alt="Cover Image" />
         <div class="content">
             <div>
                 <h2 data-key="title">Title</h2>
@@ -41,7 +41,7 @@
         <h3>Edit</h3>
         <input type="text" class="title" data-key="title" />
         <textarea class="description" data-key="description"></textarea>
-        <input type="text" data-key="tags" placeholder="Comma-separated tags" />
+        <input type="text" class="tags" data-key="tags" placeholder="Comma-separated tags" />
         <div class="image-preview-list"></div>
         <div class="image-upload-wrapper">
             <input type="file" class="image-upload" accept="image/*" multiple hidden />

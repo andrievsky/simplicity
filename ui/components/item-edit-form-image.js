@@ -1,7 +1,7 @@
 export function ItemEditFormImage(id, removeHandler, setPreviewHandler) {
     const wrapper = document.createElement("div");
     wrapper.className = "preview";
-    const url = "/api/image/files/" + id + "?format=web-thumb-sq";
+    const url = "/api/image/files/" + id + "?format=web-preview-100";
     console.log("ItemEditFormImage:", url);
     const img = document.createElement("img");
     img.src = url;
