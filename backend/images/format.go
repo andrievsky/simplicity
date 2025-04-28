@@ -26,7 +26,7 @@ func (f *Format) SizeDefined() bool {
 var Source = &Format{"source", "data", 0, 0}
 var Canonical = &Format{"canonical", PngExt, 0, 0}
 var WebLange = &Format{"web-std", JpegExt, 1280, 853}           //3:2
-var WebThumbSquare = &Format{"web-thumb-sq", JpegExt, 400, 400} //1:1
+var WebThumbSquare = &Format{"web-thumb-sq", JpegExt, 100, 100} //1:1
 
 func resolveFormat(candidate string) (*Format, error) {
 	switch candidate {

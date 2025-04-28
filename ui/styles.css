@@ -230,20 +230,32 @@ footer {
     margin-top: 1em;
 }
 .preview {
-    position: relative;
+    width: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
 }
+
 .preview img {
     width: 100px;
     height: 100px;
     object-fit: cover;
     border: 1px solid #ccc;
 }
-.remove-image {
-    position: absolute;
-    top: 2px;
-    right: 2px;
+
+.button-group {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+}
+
+.action-button {
     background: #fff;
-    border: none;
+    border: 1px solid #ccc;
     cursor: pointer;
     font-weight: bold;
+    font-size: 10px;
+    padding: 2px;
+    border-radius: 2px;
 }

@@ -29,6 +29,8 @@ export function ItemEditFormUploadFiles(frag, service, itemModel) {
         if (delta.type === "add") {
             const imageView = new ItemEditFormImage(delta.item, (id) => {
                 itemModel.uploadedImages.remove(id);
+            }, (id) => {
+                console.log("setPreviewHandler", id)
             });
             uploadedImageViews[delta.item] = previewList.appendChild(imageView.wrapper);
         }
