@@ -1,4 +1,4 @@
-import {cloneTemplate, updateTemplate} from "../template.js";
+import {ItemListCard} from "./item-list-card.js";
 
 export function ItemListComponent(container, model, templates) {
     const subscriptions = [];
@@ -9,16 +9,12 @@ export function ItemListComponent(container, model, templates) {
         }
 
         let nodes = [];
+        const template = templates["item"];
         items.forEach((item) => {
-            const frag = cloneTemplate(templates["item"]);
-            updateTemplate(frag, item);
-            const editButton = frag.querySelector('.edit-button');
-            editButton.addEventListener("click", (e) => {
-                e.preventDefault();
-                e.stopPropagation();
+            const card = new ItemListCard(item, template, (item) => {
                 model.selectedItem.set(item);
             });
-            nodes.push(frag);
+            nodes.push(card.frag);
         });
         container.replaceChildren(...nodes);
     }

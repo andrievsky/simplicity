@@ -7,7 +7,6 @@ export function Signal(initialValue) {
     };
 
     const set = (newValue) => {
-        //console.log("set", newValue);
         if (newValue instanceof Promise) {
             newValue.then(resolved => {
                 value = resolved;
@@ -36,35 +35,47 @@ export function Signal(initialValue) {
 
 export function CollectionSignal(initialItems = []) {
     let items = Array.from(initialItems);
-    const deltaSubs = new Set();
+    const subscribersAdd = new Set();
+    const subscribersRemove = new Set();
 
-    const notifyDelta = (type, item) => {
-        deltaSubs.forEach(fn => fn({ type, item }));
+
+    const notifyAdd = (value) => {
+        subscribersAdd.forEach(fn => fn(value));
     };
 
-    const add = (item) => {
-        items.push(item);
-        notifyDelta('add', item);
+    const add = (value) => {
+        items.push(value);
+        notifyAdd(value);
     };
 
-    const remove = (item) => {
-        const idx = items.indexOf(item);
+    const notifyRemove = (value) => {
+        subscribersRemove.forEach(fn => fn(value));
+    };
+
+    const remove = (value) => {
+        const idx = items.indexOf(value);
         if (idx !== -1) {
             items.splice(idx, 1);
-            notifyDelta('remove', item);
+            notifyRemove(value);
         }
     };
 
-    const subscribeDelta = (fn) => {
-        deltaSubs.add(fn);
-        return () => deltaSubs.delete(fn);
+    const subscribeAdd = (fn) => {
+        subscribersAdd.add(fn);
+        return () => subscribersAdd.delete(fn);
     };
+
+    const subscribeRemove = (fn) => {
+        subscribersRemove.add(fn);
+        return () => subscribersRemove.delete(fn);
+    }
 
     const get = () => items.slice();
 
     const unsubscribeAll = () => {
-        deltaSubs.clear();
+        subscribersAdd.clear();
+        subscribersRemove.clear();
     };
 
-    return { get, add, remove, subscribeDelta, unsubscribeAll };
+    return { get, add, remove, subscribeAdd, subscribeRemove, unsubscribeAll };
 }

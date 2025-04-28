@@ -1,10 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
+	"mime/multipart"
 	"net/http"
+	"net/http/httptest"
+	"os"
 	"simplicity/config"
 	"simplicity/genid"
 	"simplicity/images"
@@ -19,8 +25,9 @@ func main() {
 	fmt.Printf("Backend %s Version %s\n", config.BackendName, config.BackendVersion)
 	registry := items.NewInMemoryRegistry(time.Now)
 	store := storage.NewInMemoryBlobStore()
-	populateWithMockData(registry)
+
 	mux := setupServer(registry, store)
+	populateWithMockData(registry, mux)
 
 	slog.Info("Starting server on port", "Port", config.BackendPort)
 	http.ListenAndServe(fmt.Sprintf(":%s", config.BackendPort), mux)
@@ -46,13 +53,56 @@ func setupServer(registry items.Registry, store storage.BlobStore) *http.ServeMu
 	return mux
 }
 
-func populateWithMockData(registry items.Registry) {
+func populateWithMockData(registry items.Registry, mux http.Handler) {
 	ctx := context.Background()
 	data := mock.GenerateMockData()
+	imageIDs := []string{uploadTestImage(mux, "./files/test-image-1.png"), uploadTestImage(mux, "./files/test-image-2.png")}
 	for i, item := range data {
+		item.Images = imageIDs
+
 		err := registry.Create(ctx, fmt.Sprintf("%d", i), item)
 		if err != nil {
 			slog.Error("Error creating item", "Error", err)
 		}
 	}
+}
+
+func uploadTestImage(mux http.Handler, filepath string) string {
+	file, err := os.Open(filepath)
+	if err != nil {
+		panic(fmt.Errorf("cannot open image file %s: %w", filepath, err))
+	}
+	defer file.Close()
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	part, err := writer.CreateFormFile("file", filepath)
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = io.Copy(part, file)
+	if err != nil {
+		panic(err)
+	}
+
+	writer.Close()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/image/upload", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	rec := httptest.NewRecorder()
+
+	mux.ServeHTTP(rec, req)
+
+	type uploadResponse struct {
+		ID string `json:"id"`
+	}
+	var resp uploadResponse
+	err = json.NewDecoder(rec.Body).Decode(&resp)
+	if err != nil {
+		panic(err)
+	}
+
+	return resp.ID
 }
