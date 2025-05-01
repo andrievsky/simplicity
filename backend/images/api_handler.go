@@ -7,8 +7,9 @@ import (
 )
 
 type ImageApi struct {
-	store      storage.BlobStore
-	idProvider genid.Provider
+	store        storage.BlobStore
+	deletedStore storage.BlobStore
+	idProvider   genid.Provider
 }
 
 type Image struct {
@@ -20,7 +21,10 @@ const maxUploadSize = 48 * 1024 * 1024 // 48MB
 
 func NewImageApi(store storage.BlobStore, idProvider genid.Provider) *http.ServeMux {
 	router := http.NewServeMux()
-	api := &ImageApi{store, idProvider}
+	api := &ImageApi{
+		storage.NewPrefixBlobStore(store, "files/"),
+		storage.NewPrefixBlobStore(store, "deleted-files/"),
+		idProvider}
 
 	router.HandleFunc("GET /files/", api.list)
 	router.HandleFunc("POST /upload", api.post)
