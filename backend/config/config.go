@@ -1,17 +1,32 @@
 package config
 
-const BackendName = "Simplicity"
-const BackendVersion = "0.3.2"
-const BackendPort = "8090"
-
-type Info struct {
-	Name    string `json:"name"`
-	Version string `json:"version"`
+type Config struct {
+	BackendName    string `json:"backend_name"`
+	BackendVersion string `json:"backend_version"`
+	AWS            AWS    `json:"aws"`
+	Server         Server `json:"server"`
 }
 
-func BackendInfo() Info {
-	return Info{
-		Name:    BackendName,
-		Version: BackendVersion,
+type Server struct {
+	Port string `json:"port"`
+}
+
+type AWS struct {
+	Profile string `json:"profile"`
+	Bucket  string `json:"bucket"`
+}
+
+func LoadConfig() (*Config, error) {
+	config := &Config{
+		BackendName:    "Simplicity",
+		BackendVersion: "0.4.0",
+		Server: Server{
+			Port: "8090",
+		},
+		AWS: AWS{
+			Profile: "nick-aws-personal",
+			Bucket:  "simplicity-backend-storage",
+		},
 	}
+	return config, nil
 }

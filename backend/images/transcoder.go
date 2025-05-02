@@ -34,7 +34,7 @@ func Transcode(in *Format, out *Format, r io.Reader, w io.Writer) error {
 	if out.SizeDefined() {
 		img = resizeWithBackground(img, out.Width, out.Height, color.White)
 	}
-	if err := encode(out, img, w); err != nil {
+	if err = encode(out, img, w); err != nil {
 		return fmt.Errorf("failed to encode image: %w", err)
 	}
 	return nil

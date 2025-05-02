@@ -5,7 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"io"
+	"log"
 	"log/slog"
 	"mime/multipart"
 	"net/http"
@@ -22,18 +25,23 @@ import (
 )
 
 func main() {
-	fmt.Printf("Backend %s Version %s\n", config.BackendName, config.BackendVersion)
+	conf, err := config.LoadConfig()
+	if err != nil {
+		panic(fmt.Errorf("cannot load config: %w", err))
+	}
+	fmt.Printf("Backend %s Version %s\n", conf.BackendName, conf.BackendVersion)
 	registry := items.NewInMemoryRegistry(time.Now)
-	store := storage.NewInMemoryBlobStore()
+	//store := storage.NewInMemoryBlobStore()
+	store := storage.NewS3BlobStore(setupS3Client(conf), conf.AWS.Bucket)
 
-	mux := setupServer(registry, store)
+	mux := setupServer(registry, store, conf)
 	populateWithMockData(registry, mux)
 
-	slog.Info("Starting server on port", "Port", config.BackendPort)
-	http.ListenAndServe(fmt.Sprintf(":%s", config.BackendPort), mux)
+	slog.Info("Starting server on port", "Port", conf.Server.Port)
+	http.ListenAndServe(":"+conf.Server.Port, mux)
 }
 
-func setupServer(registry items.Registry, store storage.BlobStore) *http.ServeMux {
+func setupServer(registry items.Registry, store storage.BlobStore, conf *config.Config) *http.ServeMux {
 	idProvider, err := genid.NewSnowflakeProvider(1)
 	if err != nil {
 		panic(err)
@@ -47,10 +55,22 @@ func setupServer(registry items.Registry, store storage.BlobStore) *http.ServeMu
 		images.NewImageApi(storage.NewPrefixBlobStore(store, "image/"), idProvider))))
 
 	mux.HandleFunc("/api/version", func(w http.ResponseWriter, r *http.Request) {
-		svc.WriteData(w, r, config.BackendInfo(), http.StatusOK)
+		svc.WriteData(w, r, conf.BackendVersion, http.StatusOK)
 	})
 
 	return mux
+}
+
+func setupS3Client(conf *config.Config) *s3.Client {
+	cfg, err := awsconfig.LoadDefaultConfig(context.TODO(),
+		awsconfig.WithSharedConfigProfile(conf.AWS.Profile),
+	)
+	if err != nil {
+		log.Fatalf("unable to load AWS SDK config: %v", err)
+	}
+
+	// Create and return the S3 client
+	return s3.NewFromConfig(cfg)
 }
 
 func populateWithMockData(registry items.Registry, mux http.Handler) {
@@ -96,12 +116,16 @@ func uploadTestImage(mux http.Handler, filepath string) string {
 	mux.ServeHTTP(rec, req)
 
 	type uploadResponse struct {
-		ID string `json:"id"`
+		ID    string `json:"id"`
+		Error string `json:"error"`
 	}
 	var resp uploadResponse
 	err = json.NewDecoder(rec.Body).Decode(&resp)
 	if err != nil {
 		panic(err)
+	}
+	if rec.Code != http.StatusCreated {
+		panic(fmt.Sprintf("expected status code 201, got %d: %s", rec.Code, resp.Error))
 	}
 
 	return resp.ID

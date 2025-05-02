@@ -8,9 +8,8 @@ import (
 
 type ListResult struct {
 	IsObject bool
-	Path     string
+	Key      string
 	Size     int
-	Metadata map[string]string
 }
 
 const delimiter = "/"
@@ -28,9 +27,4 @@ func JoinPath(elem ...string) string {
 		return ""
 	}
 	return strings.Join(elem, delimiter)
-}
-
-type InMemoryBlobStore struct {
-	store    map[string][]byte
-	metadata map[string]map[string]string
 }

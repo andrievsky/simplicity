@@ -16,7 +16,7 @@ func (h *ImageApi) list(w http.ResponseWriter, r *http.Request) {
 	images := make([]string, 0, len(seq))
 	for _, item := range seq {
 		if !item.IsObject {
-			images = append(images, strings.TrimSuffix(item.Path, "/"))
+			images = append(images, strings.TrimSuffix(item.Key, "/"))
 		}
 	}
 

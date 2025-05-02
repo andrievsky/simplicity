@@ -7,6 +7,11 @@ import (
 	"strings"
 )
 
+type InMemoryBlobStore struct {
+	store    map[string][]byte
+	metadata map[string]map[string]string
+}
+
 func NewInMemoryBlobStore() *InMemoryBlobStore {
 	return &InMemoryBlobStore{make(map[string][]byte), make(map[string]map[string]string)}
 }
@@ -17,16 +22,16 @@ func (s *InMemoryBlobStore) List(ctx context.Context, prefix string, delimiter s
 		if strings.HasPrefix(k, prefix) {
 			base := strings.TrimPrefix(k, prefix)
 			if delimiter == "" {
-				result = append(result, ListResult{IsObject: true, Path: k, Size: len(v)})
+				result = append(result, ListResult{IsObject: true, Key: k, Size: len(v)})
 				continue
 			}
 			index := strings.Index(base, delimiter)
 			if index == -1 {
-				result = append(result, ListResult{IsObject: true, Path: k, Size: len(v)})
+				result = append(result, ListResult{IsObject: true, Key: k, Size: len(v)})
 				continue
 			}
 			dir := base[:index+1]
-			result = append(result, ListResult{IsObject: false, Path: dir, Size: 0})
+			result = append(result, ListResult{IsObject: false, Key: dir, Size: 0})
 		}
 	}
 	return result, nil

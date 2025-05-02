@@ -23,9 +23,9 @@ func TestInMemoryBlobStore_List(t *testing.T) {
 		{
 			put: []PutObject{{key: "prefix1", data: "data1"}},
 			list: []ListObject{
-				{prefix: "prefix", delimiter: "/", data: []ListResult{{IsObject: true, Path: "prefix1", Size: 5}}},
-				{prefix: "prefix", delimiter: "", data: []ListResult{{IsObject: true, Path: "prefix1", Size: 5}}},
-				{prefix: "prefix", delimiter: "////", data: []ListResult{{IsObject: true, Path: "prefix1", Size: 5}}},
+				{prefix: "prefix", delimiter: "/", data: []ListResult{{IsObject: true, Key: "prefix1", Size: 5}}},
+				{prefix: "prefix", delimiter: "", data: []ListResult{{IsObject: true, Key: "prefix1", Size: 5}}},
+				{prefix: "prefix", delimiter: "////", data: []ListResult{{IsObject: true, Key: "prefix1", Size: 5}}},
 			},
 		},
 	}
@@ -51,7 +51,7 @@ func TestInMemoryBlobStore_List(t *testing.T) {
 					t.Errorf("List() = %v, want %v", result, o.data)
 					return
 				}
-				if r.Path != o.data[i].Path {
+				if r.Key != o.data[i].Key {
 					t.Errorf("List() = %v, want %v", result, o.data)
 					return
 				}
