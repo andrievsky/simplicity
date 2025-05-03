@@ -3,6 +3,7 @@ package svc
 import (
 	"log"
 	"net/http"
+	"runtime"
 	"time"
 )
 
@@ -25,6 +26,12 @@ func WrapHandler(h http.Handler) http.HandlerFunc {
 			log.Printf("Error status code: %d when serving path: %s",
 				srw.status, r.RequestURI)
 		}
-		log.Printf("Request %s %s took %s", r.Method, r.RequestURI, time.Since(startTime))
+		var m runtime.MemStats
+		runtime.ReadMemStats(&m)
+		log.Printf("Request %s %s took %s [Alloc = %v MiB, TotalAlloc = %v MiB, Sys = %v MiB]", r.Method, r.RequestURI, time.Since(startTime), bToMb(m.Alloc), bToMb(m.TotalAlloc), bToMb(m.Sys))
 	}
+}
+
+func bToMb(b uint64) uint64 {
+	return b / 1024 / 1024
 }

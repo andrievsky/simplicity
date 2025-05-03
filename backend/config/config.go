@@ -5,6 +5,7 @@ type Config struct {
 	BackendVersion string `json:"backend_version"`
 	AWS            AWS    `json:"aws"`
 	Server         Server `json:"server"`
+	EnableDebug    bool   `json:"debug"`
 }
 
 type Server struct {
@@ -27,6 +28,7 @@ func LoadConfig() (*Config, error) {
 			Profile: "nick-aws-personal",
 			Bucket:  "simplicity-backend-storage",
 		},
+		EnableDebug: false,
 	}
 	return config, nil
 }

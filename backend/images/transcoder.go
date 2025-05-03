@@ -91,10 +91,6 @@ func resizeWithBackground(img image.Image, width, height int, bgColor color.Colo
 	newW := int(math.Ceil(float64(origW) * scale))
 	newH := int(math.Ceil(float64(origH) * scale))
 
-	// scale the source image
-	scaled := image.NewRGBA(image.Rect(0, 0, newW, newH))
-	draw.CatmullRom.Scale(scaled, scaled.Bounds(), img, origBounds, draw.Over, nil)
-
 	// create destination filled with bgColor
 	dst := image.NewRGBA(image.Rect(0, 0, width, height))
 	draw.Draw(dst, dst.Bounds(), &image.Uniform{bgColor}, image.Point{}, draw.Src)
@@ -103,13 +99,11 @@ func resizeWithBackground(img image.Image, width, height int, bgColor color.Colo
 	offsetX := (width - newW) / 2
 	offsetY := (height - newH) / 2
 
-	// draw the scaled image onto the background
-	draw.Draw(dst,
-		image.Rect(offsetX, offsetY, offsetX+newW, offsetY+newH),
-		scaled,
-		image.Point{},
-		draw.Over,
-	)
+	// define target rect where the image will be scaled into
+	targetRect := image.Rect(offsetX, offsetY, offsetX+newW, offsetY+newH)
+
+	// scale directly into dst
+	draw.CatmullRom.Scale(dst, targetRect, img, origBounds, draw.Over, nil)
 
 	return dst
 }

@@ -24,7 +24,7 @@ func (h *ImageApi) delete(w http.ResponseWriter, r *http.Request) {
 		svc.WriteError(w, r, fmt.Errorf("failed to store deleted image: %w", err))
 		return
 	}
-	slog.Info("ImageApi", "Deleting image", "ID", id)
+	slog.Info("ImageApi deleting image", "ID", id)
 	err = h.store.DeleteAll(r.Context(), id)
 	if err != nil {
 		svc.WriteError(w, r, err)

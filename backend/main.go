@@ -13,6 +13,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	_ "net/http/pprof"
 	"os"
 	"simplicity/config"
 	"simplicity/genid"
@@ -28,6 +29,11 @@ func main() {
 	conf, err := config.LoadConfig()
 	if err != nil {
 		panic(fmt.Errorf("cannot load config: %w", err))
+	}
+	if conf.EnableDebug {
+		go func() {
+			log.Println(http.ListenAndServe("localhost:6060", nil))
+		}()
 	}
 	fmt.Printf("Backend %s Version %s\n", conf.BackendName, conf.BackendVersion)
 	registry := items.NewInMemoryRegistry(time.Now)

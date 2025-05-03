@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
@@ -81,100 +80,16 @@ func (s *S3BlobStore) Get(ctx context.Context, key string) (io.ReadCloser, map[s
 	return output.Body, output.Metadata, nil
 }
 
-const minChunkSize = 10 * 1024 * 1024
-
 func (s *S3BlobStore) Put(ctx context.Context, key string, reader io.Reader, metadata map[string]string) error {
 	if key == "" {
 		return errors.New("key is empty")
 	}
-
-	chunk, err := readChunk(reader, minChunkSize)
+	data, err := io.ReadAll(reader)
 	if err != nil {
-		return fmt.Errorf("failed to read chunk: %w", err)
-	}
-	if len(chunk) == 0 {
-		return fmt.Errorf("chunk is empty")
-	}
-	if len(chunk) < minChunkSize {
-		return s.PutBlob(ctx, key, chunk, metadata)
+		slog.Error("Failed to read data", "key", key, "error", err)
+		return err
 	}
 
-	resp, err := s.client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{
-		Bucket:   aws.String(s.bucket),
-		Key:      aws.String(key),
-		Metadata: metadata,
-	})
-
-	slog.Info("Upload multipart", "key", key, "size", len(chunk))
-
-	var parts []types.CompletedPart
-	partNumber := 1
-
-	for {
-		currentPartNumber := int32(partNumber)
-		var uploadResp *s3.UploadPartOutput
-		uploadResp, err = s.client.UploadPart(ctx, &s3.UploadPartInput{
-			Bucket:     aws.String(s.bucket),
-			Key:        aws.String(key),
-			PartNumber: aws.Int32(currentPartNumber),
-			UploadId:   resp.UploadId,
-			Body:       bytes.NewReader(chunk),
-		})
-
-		if err != nil {
-			return fmt.Errorf("failed to upload part %d: %w", partNumber, err)
-		}
-
-		slog.Info("Uploaded part", "key", key, "partNumber", partNumber, "size", len(chunk))
-
-		parts = append(parts, types.CompletedPart{
-			ETag:       uploadResp.ETag,
-			PartNumber: aws.Int32(currentPartNumber),
-		})
-
-		partNumber++
-		chunk, err = readChunk(reader, minChunkSize)
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return err
-		}
-	}
-
-	_, err = s.client.CompleteMultipartUpload(ctx, &s3.CompleteMultipartUploadInput{
-		Bucket:   aws.String(s.bucket),
-		Key:      aws.String(key),
-		UploadId: resp.UploadId,
-		MultipartUpload: &types.CompletedMultipartUpload{
-			Parts: parts,
-		},
-	})
-
-	slog.Info("Completed multipart upload", "key", key)
-
-	return err
-}
-
-func readChunk(reader io.Reader, chunkSize int) ([]byte, error) {
-	chunk := make([]byte, chunkSize)
-	n, err := io.ReadFull(reader, chunk)
-	if err != nil {
-		if err == io.ErrUnexpectedEOF {
-			return chunk[:n], nil
-		}
-		return nil, err
-	}
-	if n == 0 {
-		return nil, io.EOF
-	}
-	return chunk[:n], nil
-}
-
-func (s *S3BlobStore) PutBlob(ctx context.Context, key string, data []byte, metadata map[string]string) error {
-	if key == "" {
-		return errors.New("key is empty")
-	}
 	input := &s3.PutObjectInput{
 		Bucket:        aws.String(s.bucket),
 		Key:           aws.String(key),
@@ -182,7 +97,7 @@ func (s *S3BlobStore) PutBlob(ctx context.Context, key string, data []byte, meta
 		ContentLength: aws.Int64(int64(len(data))),
 		Metadata:      metadata,
 	}
-	_, err := s.client.PutObject(ctx, input)
+	_, err = s.client.PutObject(ctx, input)
 	slog.Info("Completed blob upload", "key", key)
 	return err
 }
