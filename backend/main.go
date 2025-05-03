@@ -22,7 +22,6 @@ import (
 	"simplicity/mock"
 	"simplicity/storage"
 	"simplicity/svc"
-	"time"
 )
 
 func main() {
@@ -36,12 +35,17 @@ func main() {
 		}()
 	}
 	fmt.Printf("Backend %s Version %s\n", conf.BackendName, conf.BackendVersion)
-	registry := items.NewInMemoryRegistry(time.Now)
+
 	//store := storage.NewInMemoryBlobStore()
 	store := storage.NewS3BlobStore(setupS3Client(conf), conf.AWS.Bucket)
+	registry := items.NewPersistentRegistry(storage.NewPrefixBlobStore(store, "item/"), "items.js")
+	err = registry.Init()
+	if err != nil {
+		panic(fmt.Errorf("cannot init registry: %w", err))
+	}
 
 	mux := setupServer(registry, store, conf)
-	populateWithMockData(registry, mux)
+	//populateWithMockData(registry, mux)
 
 	slog.Info("Starting server on port", "Port", conf.Server.Port)
 	http.ListenAndServe(":"+conf.Server.Port, mux)

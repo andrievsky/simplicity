@@ -20,7 +20,7 @@ type AWS struct {
 func LoadConfig() (*Config, error) {
 	config := &Config{
 		BackendName:    "Simplicity",
-		BackendVersion: "0.4.0",
+		BackendVersion: "0.4.1",
 		Server: Server{
 			Port: "8090",
 		},
