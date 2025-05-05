@@ -1,26 +1,24 @@
-import {ItemEditFormImage} from "./item-edit-form-image.js";
+import {ItemFormImage} from "./item-form-image.js";
 
-export function ItemEditFormImages(container, service, itemModel) {
+export function ItemFormImages(container, service, signal) {
     const uploadedImageViews = {};
     const subscriptions = [];
+    const originalImages = signal.get()
 
     const setPreviewHandler = (id) => {
         console.log("setPreviewHandler", id)
     }
 
     const addImageView = (id, removeHandler, setPreviewHandler) => {
-        const imageView = new ItemEditFormImage(id, removeHandler, setPreviewHandler);
+        const imageView = new ItemFormImage(id, removeHandler, setPreviewHandler);
         uploadedImageViews[id] = container.appendChild(imageView.wrapper);
     }
 
-    const addExistingImage = (id) => {
-        console.log("addExistingImage", id);
-        addImageView(id, (id) => {itemModel.images.remove(id);}, setPreviewHandler);
-    }
-
-    const addUploadedImage = (id) => {
-        console.log("addUploadedImage", id);
-        addImageView(id, (id) => {itemModel.uploadedImages.remove(id);}, setPreviewHandler);
+    const addImage = (id) => {
+        console.log("addImage", id);
+        const canBeRemoved = !originalImages.includes(id);
+        const removeHandler = canBeRemoved ? (id) => {signal.remove(id);} : null;
+        addImageView(id, removeHandler, setPreviewHandler);
     }
 
     const removeImage = (id) => {
@@ -37,11 +35,9 @@ export function ItemEditFormImages(container, service, itemModel) {
             }
         });
     };
-
-    itemModel.images.get().forEach(addExistingImage);
-    subscriptions.push(itemModel.images.subscribeRemove(removeImage));
-    subscriptions.push(itemModel.uploadedImages.subscribeAdd(addUploadedImage));
-    subscriptions.push(itemModel.uploadedImages.subscribeRemove(removeImage));
+    signal.get().forEach(addImage);
+    subscriptions.push(signal.subscribeAdd(addImage));
+    subscriptions.push(signal.subscribeRemove(removeImage));
 
     const destroy = () => {
         subscriptions.forEach(unsub => unsub());

@@ -3,9 +3,9 @@ import {ItemFormUploadFiles} from "./item-form-upload-files.js";
 import {ItemFormImages} from "./item-form-images.js";
 import {ItemFormInput} from "./item-form-input.js";
 
-export function ItemEditForm(item, model, service, templater) {
-    const frag = templater.cloneTemplate("item-edit-template");
-    const itemModel = new ItemEditFormModel(item);
+export function ItemNewForm(model, service, templater) {
+    const frag = templater.cloneTemplate("item-new-template");
+    const itemModel = new ItemNewFormModel();
     const title = frag.querySelector('.title');
     const description = frag.querySelector('.description');
     const tags = frag.querySelector('.tags');
@@ -13,16 +13,16 @@ export function ItemEditForm(item, model, service, templater) {
 
     new ItemFormInput(title, itemModel.title)
 
-    new ItemFormInput(description, itemModel.description);
+    new ItemFormInput(description, itemModel.description)
 
-    new ItemFormInput(tags, itemModel.tags);
+    new ItemFormInput(tags, itemModel.tags)
 
     new ItemFormImages(previewList, service, itemModel.images);
 
     new ItemFormUploadFiles(frag, service, itemModel.images);
 
     const discardUploadedImages = async () => {
-        const ids = itemModel.images.get().filter(id => !item.images.includes(id));
+        const ids = itemModel.images.get();
 
         const deletePromises = ids.map((id) =>
             service.deleteImage(id).then(r => {
@@ -34,11 +34,6 @@ export function ItemEditForm(item, model, service, templater) {
         await Promise.all(deletePromises);
     };
 
-    const updateItem = () => {
-        const id = itemModel.id;
-        const item = itemModel.data();
-        model.updateItem(id, item).then(close);
-    }
     const close = () => {
         model.closeModal();
         itemModel.destroy();
@@ -47,7 +42,7 @@ export function ItemEditForm(item, model, service, templater) {
     saveButton.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        updateItem();
+        model.createItem(itemModel.data()).then(() => {close()})
     });
     const cancelButton = frag.querySelector('.cancel');
     cancelButton.addEventListener("click", (e) => {
@@ -61,12 +56,11 @@ export function ItemEditForm(item, model, service, templater) {
     return frag;
 }
 
-function ItemEditFormModel(item) {
-    const id = item.id;
-    const title = Signal(item.title || "Untitled");
-    const description = Signal(item.description || "");
-    const images = CollectionSignal(item.images || []);
-    const tags = Signal(item.tags.toString() || "");
+function ItemNewFormModel() {
+    const title = Signal("New");
+    const description = Signal("");
+    const tags = Signal("");
+    const images = CollectionSignal([]);
 
     const data = () => {
         return {
@@ -80,9 +74,9 @@ function ItemEditFormModel(item) {
     const destroy = () => {
         title.unsubscribeAll();
         description.unsubscribeAll();
-        images.unsubscribeAll();
         tags.unsubscribeAll();
+        images.unsubscribeAll();
     };
 
-    return { id, title, description, images, tags, data, destroy };
+    return { title, description, tags, images, data, destroy };
 }

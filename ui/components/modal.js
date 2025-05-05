@@ -1,15 +1,5 @@
-import {ItemEditForm} from "./item-edit-form.js";
-
-export function ModalComponent(container, model, service, templates) {
+export function ModalComponent(container, model, service, templater) {
     const subscriptions = [];
-    const showEditItem = function (item) {
-        if (!item) {
-            console.error("No item to edit");
-            return;
-        }
-        const itemEditForm = new ItemEditForm(item, model, service, templates);
-        show(itemEditForm);
-    };
     const show = function (frag) {
         container.replaceChildren(frag);
         container.style.display = "flex";
@@ -21,9 +11,9 @@ export function ModalComponent(container, model, service, templates) {
     };
 
     const init = () => {
-        subscriptions.push(model.selectedItem.subscribe((item) => {
-            if (item) {
-                showEditItem(item);
+        subscriptions.push(model.selectedItem.subscribe((view) => {
+            if (view) {
+                show(view);
             } else {
                 hide();
             }

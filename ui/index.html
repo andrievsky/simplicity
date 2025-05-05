@@ -10,7 +10,12 @@
 </head>
 <body>
 <header id="headerContainer">
-    <input type="search" placeholder="Search..." />
+    <div class="header-content">
+        <div class="search-container">
+            <input type="search" placeholder="Search..." class="search-bar" />
+        </div>
+        <button id="newItemButton" class="new-item-button">New Item</button>
+    </div>
 </header>
 
 <main id="contentContainer">
@@ -32,6 +37,24 @@
                 </div>
             </div>
             <button class="edit-button">Edit</button>
+        </div>
+    </div>
+</template>
+
+<template id="item-new-template">
+    <div class="modal">
+        <h3>New</h3>
+        <input type="text" class="title" data-key="title" />
+        <textarea class="description" data-key="description"></textarea>
+        <input type="text" class="tags" data-key="tags" placeholder="Comma-separated tags" />
+        <div class="image-preview-list"></div>
+        <div class="image-upload-wrapper">
+            <input type="file" class="image-upload" accept="image/*" multiple hidden />
+            <div class="drop-zone">Drop or click to upload</div>
+        </div>
+        <div class="modal-actions">
+            <button class="cancel">Cancel</button>
+            <button class="save">Save</button>
         </div>
     </div>
 </template>

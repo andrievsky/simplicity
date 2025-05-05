@@ -1,7 +1,3 @@
-export function cloneTemplate(template) {
-    return template.content.cloneNode(true);
-}
-
 export function updateTemplate(template, data) {
     const bindableElements = template.querySelectorAll('[data-key]');
     bindableElements.forEach((element) => {
@@ -20,4 +16,17 @@ export function updateTemplate(template, data) {
             console.warn(`No data found for key '${key}'.`);
         }
     });
+}
+
+export function Templater() {
+    const cloneTemplate = (name) => {
+        const template = document.getElementById(name);
+        if (!template) {
+            console.error(`Template with ID '${name}' not found.`);
+            return null;
+        }
+        return template.content.cloneNode(true);
+    }
+
+    return {cloneTemplate}
 }

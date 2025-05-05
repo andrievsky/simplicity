@@ -4,34 +4,28 @@ import {HeaderComponent} from "./components/header.js";
 import {ItemListComponent} from "./components/item-list.js";
 import {FooterComponent} from "./components/footer.js";
 import {ModalComponent} from "./components/modal.js";
+import {Templater} from "./template.js";
 
 const init = async () => {
     const header = document.getElementById('headerContainer');
     const content = document.getElementById('contentContainer');
     const footer = document.getElementById('footerContainer');
     const modal = document.getElementById("modalContainer");
-    const templates = {
-        "item": document.getElementById('item-template'),
-        "item-edit": document.getElementById('item-edit-template')
-    };
+
+    const templater = new Templater();
 
     let service = new BackendService("");
-    let model = new Model();
-    let modalComponent = new ModalComponent(modal, model, service, templates);
+    let model = new Model(service);
+    let modalComponent = new ModalComponent(modal, model, service, templater);
     modalComponent.init();
-    let headerComponent = new HeaderComponent(header, model);
+    let headerComponent = new HeaderComponent(header, model, service, templater);
     headerComponent.init();
-    let itemListComponent = new ItemListComponent(content, model, templates);
+    let itemListComponent = new ItemListComponent(content, model, service, templater);
     itemListComponent.init();
     let footerComponent = new FooterComponent(footer, service);
     footerComponent.init();
-    await service.listItems().then((result) => {
-        if (result.ok()) {
-            model.items.set(result.data);
-        } else {
-            console.error("Error loading items:", result.error);
-        }
-    });
+
+    model.refreshItems();
 };
 
 window.addEventListener('load', init);

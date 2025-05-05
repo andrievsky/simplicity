@@ -63,7 +63,7 @@ func setupServer(registry items.Registry, store storage.BlobStore, conf *config.
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("../ui/"))))
-	mux.Handle("/api/item/", http.StripPrefix("/api/item", items.NewApi(registry, logger)))
+	mux.Handle("/api/item/", http.StripPrefix("/api/item", items.NewApi(registry, idProvider, logger)))
 	mux.Handle("/api/image/", http.StripPrefix("/api/image", images.NewApi(store, idProvider, logger)))
 	mux.HandleFunc("/api/version", func(w http.ResponseWriter, r *http.Request) {
 		svc.Data(w, r, conf.BackendVersion, http.StatusOK)

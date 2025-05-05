@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -25,7 +26,7 @@ func runTestServer() *httptest.Server {
 	registry := items.NewInMemoryRegistry(func() time.Time {
 		return testTimestamp
 	})
-	return httptest.NewServer(setupServer(registry, storage.NewInMemoryBlobStore(), &config.Config{}))
+	return httptest.NewServer(setupServer(registry, storage.NewInMemoryBlobStore(), &config.Config{}, slog.Default()))
 }
 
 type Request struct {

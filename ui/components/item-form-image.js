@@ -1,8 +1,8 @@
-export function ItemEditFormImage(id, removeHandler, setPreviewHandler) {
+export function ItemFormImage(id, removeHandler, setPreviewHandler) {
     const wrapper = document.createElement("div");
     wrapper.className = "preview";
     const url = "/api/image/files/" + id + "?format=web-preview-100";
-    console.log("ItemEditFormImage:", url);
+    console.log("ItemFormImage:", url);
     const img = document.createElement("img");
     img.src = url;
     img.className = "preview-image";

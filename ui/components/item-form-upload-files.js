@@ -1,6 +1,4 @@
-import {ItemEditFormImage} from "./item-edit-form-image.js";
-
-export function ItemEditFormUploadFiles(frag, service, itemModel) {
+export function ItemFormUploadFiles(frag, service, signal) {
     const dropZone = frag.querySelector('.drop-zone');
     const input = frag.querySelector('.image-upload');
 
@@ -27,7 +25,7 @@ export function ItemEditFormUploadFiles(frag, service, itemModel) {
         for (const file of files) {
             const response = await service.uploadImage(file);
             if (response.ok()) {
-                itemModel.uploadedImages.add(response.data.id);
+                signal.add(response.data.id);
             } else {
                 console.error("Error uploading image:", response.error);
             }

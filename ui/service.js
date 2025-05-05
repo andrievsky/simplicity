@@ -39,7 +39,7 @@ export function BackendService(host) {
 
     return {listItems, getItem, createItem, updateItem, uploadImage, deleteImage, getVersion};
 }
-const TIMEOUT_MS = 5000;
+const TIMEOUT_MS = 15000;
 
 const fetchResource = async function (url, method = 'GET', body = null, headers = null) {
     if (!url) throw new Error("URL is required");

@@ -1,7 +1,6 @@
-import {cloneTemplate, updateTemplate} from "../template.js";
+import {updateTemplate} from "../template.js";
 
-export function ItemListCard(item, template, editHandler) {
-    const frag = cloneTemplate(template);
+export function ItemListCard(item, frag, editHandler) {
     updateTemplate(frag, item);
     const editButton = frag.querySelector('.edit-button');
     editButton.addEventListener("click", (e) => {
