@@ -1,7 +1,7 @@
 package svc
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"runtime"
 	"time"
@@ -17,19 +17,18 @@ func (w *StatusRespWr) WriteHeader(status int) {
 	w.ResponseWriter.WriteHeader(status)
 }
 
-func WrapHandler(h http.Handler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func NewLoggingMiddleware(h http.Handler, logger *slog.Logger) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		startTime := time.Now()
 		srw := &StatusRespWr{ResponseWriter: w}
 		h.ServeHTTP(srw, r)
-		if srw.status >= 400 { // 400+ codes are the error codes
-			log.Printf("Error status code: %d when serving path: %s",
-				srw.status, r.RequestURI)
+		if srw.status >= 400 {
+			logger.Error("Error status code", "status", srw.status, "path", r.RequestURI)
 		}
 		var m runtime.MemStats
 		runtime.ReadMemStats(&m)
-		log.Printf("Request %s %s took %s [Alloc = %v MiB, TotalAlloc = %v MiB, Sys = %v MiB]", r.Method, r.RequestURI, time.Since(startTime), bToMb(m.Alloc), bToMb(m.TotalAlloc), bToMb(m.Sys))
-	}
+		logger.Debug("Request stats", "method", r.Method, "path", r.RequestURI, "status", srw.status, "time", time.Since(startTime), "alloc", bToMb(m.Alloc), "totalAlloc", bToMb(m.TotalAlloc), "sys", bToMb(m.Sys))
+	})
 }
 
 func bToMb(b uint64) uint64 {

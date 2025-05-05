@@ -3,70 +3,72 @@ package items
 import (
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"simplicity/svc"
 )
 
-type ItemApi struct {
+type Api struct {
 	registry Registry
+	logger   *slog.Logger
 }
 
-func NewItemHandler(registry Registry) *http.ServeMux {
+func NewApi(registry Registry, logger *slog.Logger) *http.ServeMux {
 	router := http.NewServeMux()
-	api := &ItemApi{registry: registry}
+	api := &Api{registry: registry, logger: logger.With("component", "items")}
 
-	router.HandleFunc("GET /item", api.list)
-	router.HandleFunc("GET /item/", api.list)
-	router.HandleFunc("POST /item", api.post)
-	router.HandleFunc("GET /item/{id}", api.get)
-	router.HandleFunc("PUT /item/{id}", api.put)
-	router.HandleFunc("PATCH /item/{id}", api.patch)
-	router.HandleFunc("DELETE /item/{id}", api.delete)
+	router.HandleFunc("GET /", api.list)
+	router.HandleFunc("POST /", api.post)
+	router.HandleFunc("GET /{id}", api.get)
+	router.HandleFunc("PUT /{id}", api.put)
+	router.HandleFunc("PATCH /{id}", api.patch)
+	router.HandleFunc("DELETE /{id}", api.delete)
 
 	return router
 }
 
-func (h *ItemApi) list(w http.ResponseWriter, r *http.Request) {
-	items, err := h.registry.List(r.Context())
+func (api *Api) list(w http.ResponseWriter, r *http.Request) {
+	items, err := api.registry.List(r.Context())
 	if err != nil {
-		svc.WriteError(w, r, err)
+		svc.Error(w, r, err)
 		return
 	}
 	for i := range items {
 		items[i] = ensureDefaults(items[i])
 	}
-	svc.WriteData(w, r, items, http.StatusOK)
+	svc.Data(w, r, items, http.StatusOK)
 }
 
-func (h *ItemApi) post(w http.ResponseWriter, r *http.Request) {
+func (api *Api) post(w http.ResponseWriter, r *http.Request) {
 	var item Item
 	err := json.NewDecoder(r.Body).Decode(&item)
 	if err != nil {
-		svc.WriteError(w, r, err)
+		svc.Error(w, r, err)
 		return
 	}
 	id := item.ItemMetadata.ID
 	if id == "" {
-		svc.WriteError(w, r, errors.New("ID is required for item creation"))
+		svc.Error(w, r, errors.New("ID is required for item creation"))
 		return
 	}
-	err = h.registry.Create(r.Context(), id, item.ItemData)
+	api.logger.Info("Creating item", "ID", id, "data", item, "method", "POST")
+	err = api.registry.Create(r.Context(), id, item.ItemData)
 	if err != nil {
-		svc.WriteError(w, r, err)
+		svc.Error(w, r, err)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (h *ItemApi) get(w http.ResponseWriter, r *http.Request) {
+func (api *Api) get(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	item, err := h.registry.Read(r.Context(), id)
+	item, err := api.registry.Read(r.Context(), id)
 	if err != nil {
-		svc.WriteError(w, r, err)
+		svc.Error(w, r, err)
 		return
 	}
 	item = ensureDefaults(item)
-	svc.WriteData(w, r, item, http.StatusOK)
+	svc.Data(w, r, item, http.StatusOK)
 }
 
 func ensureDefaults(item Item) Item {
@@ -79,32 +81,32 @@ func ensureDefaults(item Item) Item {
 	return item
 }
 
-func (h *ItemApi) put(w http.ResponseWriter, r *http.Request) {
+func (api *Api) put(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	var item ItemData
 	err := json.NewDecoder(r.Body).Decode(&item)
 	if err != nil {
-		svc.WriteError(w, r, err)
+		svc.Error(w, r, err)
 		return
 	}
-	err = h.registry.Update(r.Context(), id, item)
+	err = api.registry.Update(r.Context(), id, item)
 	if err != nil {
-		svc.WriteError(w, r, err)
+		svc.Error(w, r, err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *ItemApi) patch(w http.ResponseWriter, r *http.Request) {
+func (api *Api) patch(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	var fields map[string]any
 	err := json.NewDecoder(r.Body).Decode(&fields)
 	if err != nil {
-		svc.WriteError(w, r, err)
+		svc.Error(w, r, err)
 		return
 	}
 	if len(fields) == 0 {
-		svc.WriteError(w, r, errors.New("no fields to update"))
+		svc.Error(w, r, errors.New("no fields to update"))
 		return
 	}
 	for key := range fields {
@@ -112,14 +114,14 @@ func (h *ItemApi) patch(w http.ResponseWriter, r *http.Request) {
 		case "title", "description", "tags", "images":
 			continue
 		default:
-			svc.WriteError(w, r, errors.New("invalid field: "+key))
+			svc.Error(w, r, errors.New("invalid field: "+key))
 			return
 		}
 	}
 
-	item, err := h.registry.Read(r.Context(), id)
+	item, err := api.registry.Read(r.Context(), id)
 	if err != nil {
-		svc.WriteError(w, r, err)
+		svc.Error(w, r, err)
 		return
 	}
 	if title, ok := fields["title"]; ok {
@@ -140,19 +142,19 @@ func (h *ItemApi) patch(w http.ResponseWriter, r *http.Request) {
 			item.Images[i] = image.(string)
 		}
 	}
-	err = h.registry.Update(r.Context(), id, item.ItemData)
+	err = api.registry.Update(r.Context(), id, item.ItemData)
 	if err != nil {
-		svc.WriteError(w, r, err)
+		svc.Error(w, r, err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *ItemApi) delete(w http.ResponseWriter, r *http.Request) {
+func (api *Api) delete(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	err := h.registry.Delete(r.Context(), id)
+	err := api.registry.Delete(r.Context(), id)
 	if err != nil {
-		svc.WriteError(w, r, err)
+		svc.Error(w, r, err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

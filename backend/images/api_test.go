@@ -30,7 +30,7 @@ func TestImageApi_HappyPath(t *testing.T) {
 	store := storage.NewPrefixBlobStore(storage.NewInMemoryBlobStore(), "image/")
 	idProvider, err := genid.NewSnowflakeProvider(1)
 	require.NoError(t, err)
-	router := NewImageApi(store, idProvider)
+	router := NewApi(store, idProvider)
 
 	var imageID string
 	var imageData = []byte("\xFF\xD8\xFF\xE0" + "fake jpg data")
@@ -92,7 +92,7 @@ func TestImageApi_UnhappyPath(t *testing.T) {
 	store := storage.NewInMemoryBlobStore()
 	idProvider, err := genid.NewSnowflakeProvider(1)
 	require.NoError(t, err)
-	router := NewImageApi(store, idProvider)
+	router := NewApi(store, idProvider)
 
 	t.Run("POST /upload with no file", func(t *testing.T) {
 		body := &bytes.Buffer{}

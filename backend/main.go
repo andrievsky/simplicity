@@ -1,25 +1,19 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"io"
-	"log"
 	"log/slog"
-	"mime/multipart"
 	"net/http"
-	"net/http/httptest"
 	_ "net/http/pprof"
-	"os"
+	"runtime/debug"
 	"simplicity/config"
 	"simplicity/genid"
 	"simplicity/images"
 	"simplicity/items"
-	"simplicity/mock"
+	"simplicity/loggers"
 	"simplicity/storage"
 	"simplicity/svc"
 )
@@ -29,114 +23,62 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("cannot load config: %w", err))
 	}
+	logger := loggers.NewLogger(conf)
+	slog.SetDefault(logger)
 	if conf.EnableDebug {
 		go func() {
-			log.Println(http.ListenAndServe("localhost:6060", nil))
+			logger.Debug("Starting pprof server", "Port", "6060")
+			http.ListenAndServe("localhost:6060", nil)
 		}()
 	}
-	fmt.Printf("Backend %s Version %s\n", conf.BackendName, conf.BackendVersion)
+
+	logger.Info("Backend info", "Version", conf.BackendVersion, "Name", conf.BackendName)
+	buildInfo, _ := debug.ReadBuildInfo()
+	logger.Debug("Build info", "Version", buildInfo.Main.Version, "Path", buildInfo.Main.Path, "GoVersion", buildInfo.GoVersion, "Settings", buildInfo.Settings)
 
 	//store := storage.NewInMemoryBlobStore()
-	store := storage.NewS3BlobStore(setupS3Client(conf), conf.AWS.Bucket)
-	registry := items.NewPersistentRegistry(storage.NewPrefixBlobStore(store, "item/"), "items.js")
+	s3Client, err := setupS3Client(conf)
+	if err != nil {
+		panic(fmt.Errorf("cannot create S3 client: %w", err))
+	}
+	store := storage.NewS3BlobStore(s3Client, conf.AWS.Bucket)
+	registry := items.NewPersistentRegistry(store, "item/items.js")
 	err = registry.Init()
 	if err != nil {
 		panic(fmt.Errorf("cannot init registry: %w", err))
 	}
 
-	mux := setupServer(registry, store, conf)
+	handler := svc.NewLoggingMiddleware(setupServer(registry, store, conf, logger), logger)
+
 	//populateWithMockData(registry, mux)
 
-	slog.Info("Starting server on port", "Port", conf.Server.Port)
-	http.ListenAndServe(":"+conf.Server.Port, mux)
+	logger.Info("Starting backend service", "Port", conf.Server.Port)
+	http.ListenAndServe(":"+conf.Server.Port, handler)
 }
 
-func setupServer(registry items.Registry, store storage.BlobStore, conf *config.Config) *http.ServeMux {
+func setupServer(registry items.Registry, store storage.BlobStore, conf *config.Config, logger *slog.Logger) http.Handler {
 	idProvider, err := genid.NewSnowflakeProvider(1)
 	if err != nil {
 		panic(err)
 	}
-	itemsApi := items.NewItemHandler(registry)
 	mux := http.NewServeMux()
-	mux.Handle("/api/", http.StripPrefix("/api", itemsApi))
-	mux.Handle("/", svc.WrapHandler(
-		http.StripPrefix("/", http.FileServer(http.Dir("../ui/")))))
-	mux.Handle("/api/image/", svc.WrapHandler(http.StripPrefix("/api/image",
-		images.NewImageApi(storage.NewPrefixBlobStore(store, "image/"), idProvider))))
-
+	mux.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("../ui/"))))
+	mux.Handle("/api/item/", http.StripPrefix("/api/item", items.NewApi(registry, logger)))
+	mux.Handle("/api/image/", http.StripPrefix("/api/image", images.NewApi(store, idProvider, logger)))
 	mux.HandleFunc("/api/version", func(w http.ResponseWriter, r *http.Request) {
-		svc.WriteData(w, r, conf.BackendVersion, http.StatusOK)
+		svc.Data(w, r, conf.BackendVersion, http.StatusOK)
 	})
 
 	return mux
 }
 
-func setupS3Client(conf *config.Config) *s3.Client {
+func setupS3Client(conf *config.Config) (*s3.Client, error) {
 	cfg, err := awsconfig.LoadDefaultConfig(context.TODO(),
 		awsconfig.WithSharedConfigProfile(conf.AWS.Profile),
 	)
 	if err != nil {
-		log.Fatalf("unable to load AWS SDK config: %v", err)
+		return nil, err
 	}
 
-	// Create and return the S3 client
-	return s3.NewFromConfig(cfg)
-}
-
-func populateWithMockData(registry items.Registry, mux http.Handler) {
-	ctx := context.Background()
-	data := mock.GenerateMockData()
-	imageIDs := []string{uploadTestImage(mux, "./files/test-image-1.png"), uploadTestImage(mux, "./files/test-image-2.png")}
-	for i, item := range data {
-		item.Images = imageIDs
-
-		err := registry.Create(ctx, fmt.Sprintf("%d", i), item)
-		if err != nil {
-			slog.Error("Error creating item", "Error", err)
-		}
-	}
-}
-
-func uploadTestImage(mux http.Handler, filepath string) string {
-	file, err := os.Open(filepath)
-	if err != nil {
-		panic(fmt.Errorf("cannot open image file %s: %w", filepath, err))
-	}
-	defer file.Close()
-
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-
-	part, err := writer.CreateFormFile("file", filepath)
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = io.Copy(part, file)
-	if err != nil {
-		panic(err)
-	}
-
-	writer.Close()
-
-	req := httptest.NewRequest(http.MethodPost, "/api/image/upload", body)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-	rec := httptest.NewRecorder()
-
-	mux.ServeHTTP(rec, req)
-
-	type uploadResponse struct {
-		ID    string `json:"id"`
-		Error string `json:"error"`
-	}
-	var resp uploadResponse
-	err = json.NewDecoder(rec.Body).Decode(&resp)
-	if err != nil {
-		panic(err)
-	}
-	if rec.Code != http.StatusCreated {
-		panic(fmt.Sprintf("expected status code 201, got %d: %s", rec.Code, resp.Error))
-	}
-
-	return resp.ID
+	return s3.NewFromConfig(cfg), nil
 }

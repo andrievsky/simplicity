@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"io"
-	"log/slog"
 	"simplicity/oops"
 	"strings"
 )
@@ -66,7 +65,6 @@ func toLestResult(object types.Object) (ListResult, error) {
 }
 
 func (s *S3BlobStore) Get(ctx context.Context, key string) (io.ReadCloser, map[string]string, error) {
-	slog.Info("Get", "key", key)
 	output, err := s.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
@@ -86,7 +84,6 @@ func (s *S3BlobStore) Put(ctx context.Context, key string, reader io.Reader, met
 	}
 	data, err := io.ReadAll(reader)
 	if err != nil {
-		slog.Error("Failed to read data", "key", key, "error", err)
 		return err
 	}
 
@@ -98,7 +95,6 @@ func (s *S3BlobStore) Put(ctx context.Context, key string, reader io.Reader, met
 		Metadata:      metadata,
 	}
 	_, err = s.client.PutObject(ctx, input)
-	slog.Info("Completed blob upload", "key", key)
 	return err
 }
 
@@ -118,8 +114,8 @@ func (s *S3BlobStore) DeleteAll(ctx context.Context, prefix string) error {
 	if prefix == "" {
 		return errors.New("prefix is empty")
 	}
-	if !strings.HasSuffix(prefix, delimiter) {
-		prefix += delimiter
+	if !strings.HasSuffix(prefix, Delimiter) {
+		prefix += Delimiter
 	}
 	input := &s3.ListObjectsV2Input{
 		Bucket: aws.String(s.bucket),

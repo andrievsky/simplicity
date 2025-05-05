@@ -74,8 +74,8 @@ func (s *InMemoryBlobStore) DeleteAll(ctx context.Context, prefix string) error 
 	if prefix == "" {
 		return oops.InvalidKey
 	}
-	if !strings.HasSuffix(prefix, delimiter) {
-		prefix += delimiter
+	if !strings.HasSuffix(prefix, Delimiter) {
+		prefix += Delimiter
 	}
 	for k := range s.store {
 		if strings.HasPrefix(k, prefix) {

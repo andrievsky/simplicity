@@ -12,7 +12,7 @@ type ListResult struct {
 	Size     int
 }
 
-const delimiter = "/"
+const Delimiter = "/"
 
 type BlobStore interface {
 	List(ctx context.Context, prefix string, delimiter string) ([]ListResult, error)
@@ -26,5 +26,5 @@ func JoinPath(elem ...string) string {
 	if len(elem) == 0 {
 		return ""
 	}
-	return strings.Join(elem, delimiter)
+	return strings.Join(elem, Delimiter)
 }
