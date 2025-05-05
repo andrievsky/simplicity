@@ -1,6 +1,6 @@
 export function BackendService(host) {
     const listItems = async function () {
-        return fetchResource(`${host}/api/item`, 'GET');
+        return fetchResource(`${host}/api/item/`, 'GET');
     }
 
     const getItem = async function (id) {
@@ -10,7 +10,7 @@ export function BackendService(host) {
 
     const createItem = async function (item) {
         if (!item) return ErrorResult("Item is required");
-        return fetchResource(`${host}/api/item`, 'POST', item);
+        return fetchResource(`${host}/api/item/`, 'POST', item);
     }
 
     const updateItem = async function (id, item) {
